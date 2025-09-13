@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Chats from './Chats';
 import { useLanguage } from '../LanguageContext';
-import { translateText } from '../utils/translateText';
 import womenImage from '../women1.jpg';
 
 function JobSeekerDashboard({ onLogout }) {
@@ -10,8 +9,6 @@ function JobSeekerDashboard({ onLogout }) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [jobs, setJobs] = useState([]);
   const [allJobs, setAllJobs] = useState([]);
-  const [savedJobs, setSavedJobs] = useState([]);
-  const [savedJobIds, setSavedJobIds] = useState([]);
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -23,32 +20,44 @@ function JobSeekerDashboard({ onLogout }) {
   const [applyForJob, setApplyForJob] = useState(null);
   const [applyForm, setApplyForm] = useState({ applicantName: '', age: '', address: '', email: '' });
   const [resume, setResume] = useState(null);
-  const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef(null);
-
-  // Filters (Internshala-like)
-  const [showFilters, setShowFilters] = useState(false);
-  const [filterJobType, setFilterJobType] = useState(''); // '' | 'job' | 'internship'
-  const [filterWorkMode, setFilterWorkMode] = useState(''); // '' | 'onsite' | 'remote' | 'hybrid'
-  const [filterCategory, setFilterCategory] = useState('');
-  const [filterLocation, setFilterLocation] = useState('');
-  const [filterMinStipend, setFilterMinStipend] = useState('');
-  const [filterDurationMax, setFilterDurationMax] = useState('');
-  const [filterStartFrom, setFilterStartFrom] = useState('');
-  const [filterSkillsCsv, setFilterSkillsCsv] = useState('');
-  const [filterPerksCsv, setFilterPerksCsv] = useState('');
-
-  const { t, locale } = useLanguage();
+  const [translatedTitles, setTranslatedTitles] = useState({});
+  const [showAppDetailsModal, setShowAppDetailsModal] = useState(false);
+  const [selectedApplication, setSelectedApplication] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   const username = localStorage.getItem('username') || 'JobSeeker';
   const navigate = useNavigate();
+  const { t, language } = useLanguage();
 
   useEffect(() => {
     if (section === 'view') fetchJobs();
     if (section === 'applications') fetchApplications();
-    if (section === 'saved') fetchSaved();
+    fetchNotifications();
     // eslint-disable-next-line
   }, [section]);
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await fetch(`/api/notifications?username=${username}`);
+      const data = await res.json();
+      if (res.ok) setNotifications(data);
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    }
+  };
+
+  useEffect(() => {
+    // Re-translate job titles when language changes
+    if (applications.length > 0 && language !== 'en') {
+      setTranslatedTitles({}); // Clear existing translations
+      translateJobTitles(applications);
+    }
+    if (jobs.length > 0 && language !== 'en') {
+      translateJobTitlesForJobs(jobs);
+    }
+    // eslint-disable-next-line
+  }, [language]);
 
   const fetchJobs = async () => {
     setLoading(true); setError('');
@@ -57,29 +66,45 @@ function JobSeekerDashboard({ onLogout }) {
       const data = await res.json();
       if (res.ok) {
         setAllJobs(data); setJobs(data);
+        // Translate job titles if language is not English
+        if (language !== 'en') {
+          translateJobTitlesForJobs(data);
+        }
         const appRes = await fetch(`/api/my-applications?username=${username}`);
         const appData = await appRes.json();
         if (appRes.ok) setAppliedJobIds(appData.map(a => a.job?._id));
-      } else setError(data.error || 'Failed to fetch jobs');
+      } else setError(data.error || t('failed_to_fetch') + ' jobs');
     } catch {
-      setError(t('error_network'));
+      setError(t('network_error'));
     }
     setLoading(false);
   };
 
-  const fetchSaved = async () => {
-    setLoading(true); setError('');
-    try {
-      const res = await fetch(`/api/saved?username=${username}`);
-      const data = await res.json();
-      if (res.ok) {
-        setSavedJobs(data);
-        setSavedJobIds(data.map(j => j._id));
-      } else setError(data.error || 'Failed to fetch saved jobs');
-    } catch {
-      setError(t('error_network'));
+  const translateJobTitlesForJobs = async (jobs) => {
+    const titlesToTranslate = jobs
+      .filter(job => job.title && !translatedTitles[job.title])
+      .map(job => job.title);
+    
+    if (titlesToTranslate.length === 0) return;
+
+    const translations = {};
+    for (const title of titlesToTranslate) {
+      try {
+        const res = await fetch('/api/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: title, target: language })
+        });
+        const data = await res.json();
+        if (res.ok && data.translatedText) {
+          translations[title] = data.translatedText;
+        }
+      } catch (error) {
+        console.error('Translation error:', error);
+      }
     }
-    setLoading(false);
+    
+    setTranslatedTitles(prev => ({ ...prev, ...translations }));
   };
 
   const fetchApplications = async () => {
@@ -87,103 +112,53 @@ function JobSeekerDashboard({ onLogout }) {
     try {
       const res = await fetch(`/api/my-applications?username=${username}`);
       const data = await res.json();
-      if (res.ok) setApplications(data);
-      else setError(data.error || 'Failed to fetch applications');
+      if (res.ok) {
+        setApplications(data);
+        // Translate job titles if language is not English
+        if (language !== 'en') {
+          translateJobTitles(data);
+        }
+      }
+      else setError(data.error || t('failed_to_fetch') + ' applications');
     } catch {
-      setError(t('error_network'));
+      setError(t('network_error'));
     }
     setLoading(false);
+  };
+
+  const translateJobTitles = async (applications) => {
+    const titlesToTranslate = applications
+      .filter(app => app.job?.title && !translatedTitles[app.job.title])
+      .map(app => app.job.title);
+    
+    if (titlesToTranslate.length === 0) return;
+
+    const translations = {};
+    for (const title of titlesToTranslate) {
+      try {
+        const res = await fetch('/api/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: title, target: language })
+        });
+        const data = await res.json();
+        if (res.ok && data.translatedText) {
+          translations[title] = data.translatedText;
+        }
+      } catch (error) {
+        console.error('Translation error:', error);
+      }
+    }
+    
+    setTranslatedTitles(prev => ({ ...prev, ...translations }));
   };
 
   const handleSearch = (text) => {
     setQuery(text);
     const q = text.trim().toLowerCase();
     if (!q) { setJobs(allJobs); return; }
-    setJobs(allJobs.filter(j => {
-      const original = j.title?.toLowerCase() || '';
-      const translatedTitle = translatedMap[j._id]?.title?.toLowerCase() || '';
-      return original.includes(q) || translatedTitle.includes(q);
-    }));
+    setJobs(allJobs.filter(j => j.title.toLowerCase().includes(q)));
   };
-
-  const applyFilters = async () => {
-    setLoading(true); setError('');
-    try {
-      const params = new URLSearchParams();
-      if (query.trim()) params.set('q', query.trim());
-      if (filterJobType) params.set('jobType', filterJobType);
-      if (filterWorkMode) params.set('workMode', filterWorkMode);
-      if (filterCategory.trim()) params.set('category', filterCategory.trim());
-      if (filterLocation.trim()) params.set('location', filterLocation.trim());
-      if (filterMinStipend) params.set('minStipend', filterMinStipend);
-      if (filterDurationMax) params.set('durationMax', filterDurationMax);
-      if (filterStartFrom) params.set('startFrom', filterStartFrom);
-      if (filterSkillsCsv.trim()) params.set('skills', filterSkillsCsv.trim());
-      if (filterPerksCsv.trim()) params.set('perks', filterPerksCsv.trim());
-      const res = await fetch(`/api/all-jobs?${params.toString()}`);
-      const data = await res.json();
-      if (res.ok) { setAllJobs(data); setJobs(data); }
-      else setError(data.error || 'Failed to filter jobs');
-    } catch {
-      setError(t('error_network'));
-    }
-    setLoading(false);
-  };
-
-  const clearFilters = async () => {
-    setFilterJobType('');
-    setFilterWorkMode('');
-    setFilterCategory('');
-    setFilterLocation('');
-    setFilterMinStipend('');
-    setFilterDurationMax('');
-    setFilterStartFrom('');
-    setFilterSkillsCsv('');
-    setFilterPerksCsv('');
-    await fetchJobs();
-  };
-
-  const toggleSave = async (jobId) => {
-    try {
-      if (savedJobIds.includes(jobId)) {
-        const res = await fetch(`/api/saved/${jobId}?username=${username}`, { method: 'DELETE' });
-        if (res.ok) {
-          setSavedJobIds(ids => ids.filter(id => id !== jobId));
-          setSavedJobs(list => list.filter(j => j._id !== jobId));
-        }
-      } else {
-        const res = await fetch('/api/saved', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, jobId }) });
-        if (res.ok) {
-          setSavedJobIds(ids => [...ids, jobId]);
-        }
-      }
-    } catch {}
-  };
-
-  const [translatedMap, setTranslatedMap] = useState({}); // jobId -> { title, description, company, location }
-  useEffect(() => {
-    let cancelled = false;
-    async function run() {
-      if (!allJobs.length) return;
-      // translate only if non-English
-      const langMap = { en: 'en', ta: 'ta', hi: 'hi', te: 'te' };
-      // derive from LanguageContext rather than locale slice to avoid 'auto' detection issues
-      const target = langMap[(locale || 'en').startsWith('ta') ? 'ta' : (locale || 'en').startsWith('hi') ? 'hi' : (locale || 'en').startsWith('te') ? 'te' : 'en'];
-      if (target === 'en') { setTranslatedMap({}); return; }
-      const entries = await Promise.all(allJobs.map(async (j) => {
-        const [title, description, company, location] = await Promise.all([
-          translateText(j.title, target),
-          translateText(j.description, target),
-          translateText(j.company, target),
-          translateText(j.location, target)
-        ]);
-        return [j._id, { title, description, company, location }];
-      }));
-      if (!cancelled) setTranslatedMap(Object.fromEntries(entries));
-    }
-    run();
-    return () => { cancelled = true; };
-  }, [allJobs, locale]);
 
   const handleApplyOpen = (job) => {
     setApplyForJob(job);
@@ -195,7 +170,7 @@ function JobSeekerDashboard({ onLogout }) {
     setError(''); setSuccess('');
     if (!applyForJob) return;
     if (applyForJob.requireResume && !resume) {
-      setError('Resume is required for this job. Please upload your resume.');
+      setError(t('resume_required') + ' for this job. Please upload your resume.');
       return;
     }
     try {
@@ -217,276 +192,144 @@ function JobSeekerDashboard({ onLogout }) {
         setApplyForJob(null);
         setApplyForm({ applicantName: '', age: '', address: '', email: '' });
         setResume(null);
-      } else setError(data.error || 'Failed to apply');
+      } else setError(data.error || t('failed_to_post') + ' application');
     } catch {
-      setError(t('error_network'));
+      setError(t('network_error'));
     }
   };
 
-  // Voice Recognition (Web Speech API)
-  const ensureRecognition = () => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return null;
-    if (!recognitionRef.current) {
-      const recog = new SpeechRecognition();
-      recog.lang = locale;
-      recog.interimResults = false;
-      recog.maxAlternatives = 1;
-      recog.onresult = (event) => {
-        const transcript = event.results[0][0].transcript.toLowerCase();
-        handleVoiceCommand(transcript);
-      };
-      recog.onend = () => setIsListening(false);
-      recog.onerror = () => setIsListening(false);
-      recognitionRef.current = recog;
-    } else {
-      recognitionRef.current.lang = locale;
-    }
-    return recognitionRef.current;
-  };
-
-  const toggleListening = () => {
-    const recog = ensureRecognition();
-    if (!recog) {
-      alert('Speech recognition not supported in this browser');
-      return;
-    }
-    if (isListening) {
-      try { recog.stop(); } catch {}
-      setIsListening(false);
-      return;
-    }
-    setIsListening(true);
-    try { recog.start(); } catch { setIsListening(false); }
-  };
-
-  const handleVoiceCommand = (text) => {
-    // Basic intents
-    // e.g., "search for nurse", "find teacher", "apply to cashier", "open details for designer"
-    if (text.startsWith('search for ') || text.startsWith('find ')) {
-      const term = text.replace('search for ', '').replace('find ', '').trim();
-      handleSearch(term);
-      setSection('view');
-      return;
-    }
-    if (text.startsWith('open details for ') || text.startsWith('open ')) {
-      const term = text.replace('open details for ', '').replace('open ', '').trim();
-      const match = allJobs.find(j => j.title.toLowerCase().includes(term));
-      if (match) navigate(`/jobs/${match._id}`);
-      setSection('view');
-      return;
-    }
-    if (text.startsWith('apply to ') || text.startsWith('apply for ')) {
-      const term = text.replace('apply to ', '').replace('apply for ', '').trim();
-      const match = allJobs.find(j => j.title.toLowerCase().includes(term));
-      if (match && !appliedJobIds.includes(match._id)) {
-        handleApplyOpen(match);
-      }
-      setSection('view');
-      return;
-    }
-    if (text.includes('home')) { setSection('home'); return; }
-    if (text.includes('view jobs')) { setSection('view'); return; }
-    if (text.includes('applications')) { setSection('applications'); return; }
-    if (text.includes('chats')) { setSection('chats'); return; }
-
-    // Fallback: treat as search query
-    handleSearch(text);
-    setSection('view');
+  const handleApplicationClick = (application) => {
+    setSelectedApplication(application);
+    setShowAppDetailsModal(true);
   };
 
   return (
-    <div className="dashboard-container" style={{ paddingTop: 64 }}>
+    <div className="dashboard-container">
       <div className="header-bar">
-        <div className="header-title">{t('app_title')}</div>
+        <div className="header-title">Women Job Portal</div>
         <div className="header-nav">
           <button className={section === 'home' ? 'active' : ''} onClick={() => setSection('home')}>{t('home')}</button>
           <button className={section === 'view' ? 'active' : ''} onClick={() => setSection('view')}>{t('view_jobs')}</button>
-          <button className={section === 'saved' ? 'active' : ''} onClick={() => setSection('saved')}>{t('saved')}</button>
           <button className={section === 'applications' ? 'active' : ''} onClick={() => setSection('applications')}>{t('my_applications')}</button>
           <button className={section === 'chats' ? 'active' : ''} onClick={() => setSection('chats')}>{t('chats')}</button>
         </div>
-        <div className="header-profile" onClick={() => setShowProfileMenu(v => !v)}>
-          <div className="profile-icon">{username[0]?.toUpperCase() || 'S'}</div>
-          {showProfileMenu && (
-            <div style={{ position: 'absolute', top: 56, right: 24, background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.12)', borderRadius: 8, padding: 12, zIndex: 200 }}>
-              <div style={{ marginBottom: 8, fontWeight: 500 }}>{username}</div>
-              <button onClick={onLogout} style={{ background: '#e75480', color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer' }}>{t('logout')}</button>
-            </div>
-          )}
+        <div className="header-right">
+          <div className="notification-bell" onClick={() => setShowNotifications(v => !v)}>
+            <span className="bell-icon">🔔</span>
+            {notifications.length > 0 && <span className="notification-badge">{notifications.length}</span>}
+            {showNotifications && (
+              <div className="notification-dropdown">
+                <div className="notification-header">{t('notifications')}</div>
+                {notifications.length === 0 ? (
+                  <div className="no-notifications">{t('no_notifications')}</div>
+                ) : (
+                  notifications.map(notif => (
+                    <div key={notif._id} className="notification-item">
+                      <div className="notification-text">{notif.message}</div>
+                      <div className="notification-time">{new Date(notif.createdAt).toLocaleDateString()}</div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+          <div className="header-profile" onClick={() => setShowProfileMenu(v => !v)}>
+            <div className="profile-icon">{username[0]?.toUpperCase() || 'S'}</div>
+            <span className="profile-name">{username}</span>
+            {showProfileMenu && (
+              <div className="profile-menu">
+                <div className="profile-menu-header">{username}</div>
+                <button onClick={onLogout}>{t('logout')}</button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {section === 'home' && (
         <div style={{ width: '100%', margin: 0 }}>
-          <div className="hero-banner hero-full" style={{ backgroundImage: `url(${womenImage})` }}>
-            <div className="hero-overlay"></div>
-            <div className="hero-text">{t('discover')}</div>
+          <div className="hero-section">
+            <div className="hero-content">
+              <div className="hero-text-section">
+                <h1 className="hero-title">{t('discover')}</h1>
+                <p className="hero-subtitle">{t('empower_women')}</p>
+                <div className="hero-actions">
+                  <button className="btn-primary hero-btn" onClick={() => setSection('view')}>
+                    {t('view_jobs')}
+                  </button>
+                  <button className="btn-secondary hero-btn" onClick={() => setSection('applications')}>
+                    {t('my_applications')}
+                  </button>
+                </div>
+              </div>
+              <div className="hero-image-section">
+                <img src={womenImage} alt="Women empowerment" className="hero-image" />
+              </div>
+            </div>
           </div>
         </div>
       )}
 
       {section === 'view' && (
-        <div style={{ width: '100%', maxWidth: 720, margin: '24px auto' }}>
+        <div className="content-section">
           <h3>{t('available_jobs')}</h3>
           <div className="search-bar">
-            <input className="search-input" placeholder={t('search_placeholder')} value={query} onChange={(e) => handleSearch(e.target.value)} />
+            <input className="search-input" placeholder={t('search_jobs')} value={query} onChange={(e) => handleSearch(e.target.value)} />
             <button className="search-button" onClick={() => handleSearch('')}>{t('reset')}</button>
-            <button className="search-button" onClick={toggleListening} title="Voice Search" style={{ background: isListening ? '#fde68a' : undefined }}>
-              {isListening ? '🎙️' : '🎤'}
-            </button>
-            <button className="search-button" onClick={() => setShowFilters(v => !v)}>{t('filters')}</button>
           </div>
-          {showFilters && (
-            <div className="form-card" style={{ marginTop: 12 }}>
-              <div className="form-grid">
-                <div>
-                  <label className="label">{t('job_type')}</label>
-                  <select className="input" value={filterJobType} onChange={e => setFilterJobType(e.target.value)}>
-                    <option value="">--</option>
-                    <option value="job">{t('job')}</option>
-                    <option value="internship">{t('internship')}</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="label">{t('work_mode')}</label>
-                  <select className="input" value={filterWorkMode} onChange={e => setFilterWorkMode(e.target.value)}>
-                    <option value="">--</option>
-                    <option value="onsite">{t('onsite')}</option>
-                    <option value="remote">{t('remote')}</option>
-                    <option value="hybrid">{t('hybrid')}</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="label">{t('category')}</label>
-                  <input className="input" value={filterCategory} onChange={e => setFilterCategory(e.target.value)} />
-                </div>
-                <div>
-                  <label className="label">{t('location_filter')}</label>
-                  <input className="input" value={filterLocation} onChange={e => setFilterLocation(e.target.value)} />
-                </div>
-                <div>
-                  <label className="label">{t('min_stipend')}</label>
-                  <input className="input" type="number" value={filterMinStipend} onChange={e => setFilterMinStipend(e.target.value)} />
-                </div>
-                <div>
-                  <label className="label">{t('duration_max_weeks')}</label>
-                  <input className="input" type="number" value={filterDurationMax} onChange={e => setFilterDurationMax(e.target.value)} />
-                </div>
-                <div>
-                  <label className="label">{t('start_from')}</label>
-                  <input className="input" type="date" value={filterStartFrom} onChange={e => setFilterStartFrom(e.target.value)} />
-                </div>
-                <div className="full">
-                  <label className="label">{t('skills_csv')}</label>
-                  <input className="input" value={filterSkillsCsv} onChange={e => setFilterSkillsCsv(e.target.value)} />
-                </div>
-                <div className="full">
-                  <label className="label">{t('perks_csv')}</label>
-                  <input className="input" value={filterPerksCsv} onChange={e => setFilterPerksCsv(e.target.value)} />
-                </div>
-              </div>
-              <div className="actions">
-                <button className="btn-secondary" onClick={clearFilters}>{t('clear_filters')}</button>
-                <button className="btn-primary" onClick={applyFilters}>{t('filter')}</button>
-              </div>
-            </div>
-          )}
-          {loading ? <div>{t('loading')}</div> : jobs.length === 0 ? <div>{t('no_jobs_available')}</div> : (
+          {loading ? <div className="loading">{t('loading_jobs')}</div> : jobs.length === 0 ? <div className="loading">{t('no_jobs_available')}</div> : (
             <ul className="title-list">
-              {jobs.map(job => {
-                const tr = translatedMap[job._id];
-                return (
-                  <li key={job._id} className="title-item" onClick={() => setExpandedJob(expandedJob === job._id ? null : job._id)}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span>{tr?.title || job.title}</span>
-                      {job.requireResume ? <span className="badge">{t('resume_required')}</span> : <span className="badge" style={{ background: '#ecfdf5', color: '#065f46' }}>{t('resume_optional')}</span>}
-                    </div>
-                    {expandedJob === job._id && (
-                      <div style={{ marginTop: 10, fontWeight: 400 }}>
-                        <div style={{ color: '#6b7280', marginBottom: 6 }}>{tr?.company || job.company} • {tr?.location || job.location}</div>
-                        <div style={{ marginBottom: 10 }}>{tr?.description || job.description}</div>
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
-                          {job.jobType && <span className="badge">{t('job_type')}: {job.jobType}</span>}
-                          {job.workMode && <span className="badge">{t('work_mode')}: {job.workMode}</span>}
-                          {typeof job.durationWeeks === 'number' && <span className="badge">{t('duration_weeks')}: {job.durationWeeks}</span>}
-                          {(job.stipendMin || job.stipendMax) && <span className="badge">{t('stipend')}: {job.stipendMin || 0}-{job.stipendMax || 0}</span>}
-                          {job.openings && <span className="badge">{t('openings')}: {job.openings}</span>}
-                          {job.startDate && <span className="badge">{t('start_date')}: {new Date(job.startDate).toLocaleDateString()}</span>}
-                          {job.applyBy && <span className="badge">{t('apply_by')}: {new Date(job.applyBy).toLocaleDateString()}</span>}
-                        </div>
-                        {(Array.isArray(job.skills) && job.skills.length > 0) && (
-                          <div style={{ marginBottom: 8 }}>
-                            <b>Skills:</b> {job.skills.join(', ')}
-                          </div>
-                        )}
-                        {(Array.isArray(job.perks) && job.perks.length > 0) && (
-                          <div style={{ marginBottom: 8 }}>
-                            <b>Perks:</b> {job.perks.join(', ')}
-                          </div>
-                        )}
-                        <div style={{ display: 'flex', gap: 10 }}>
-                          <button className="btn-primary" disabled={appliedJobIds.includes(job._id)} onClick={(e) => { e.stopPropagation(); handleApplyOpen(job); }}>
-                            {appliedJobIds.includes(job._id) ? t('applied') : t('apply')}
-                          </button>
-                          <button className="btn-secondary" onClick={(e) => { e.stopPropagation(); navigate(`/jobs/${job._id}`); }}>{t('view_details')}</button>
-                          <button className="btn-secondary" onClick={(e) => { e.stopPropagation(); toggleSave(job._id); }}>
-                            {savedJobIds.includes(job._id) ? t('unsave') : t('save')}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-          {error && <div style={{ color: 'red', marginTop: 10 }}>{error}</div>}
-          {success && <div style={{ color: 'green', marginTop: 10 }}>{success}</div>}
-        </div>
-      )}
-
-      {section === 'saved' && (
-        <div style={{ width: '100%', maxWidth: 720, margin: '24px auto' }}>
-          <h3>{t('saved_jobs')}</h3>
-          {loading ? <div>{t('loading')}</div> : savedJobs.length === 0 ? <div>{t('no_saved')}</div> : (
-            <ul className="title-list">
-              {savedJobs.map(job => (
+              {jobs.map(job => (
                 <li key={job._id} className="title-item" onClick={() => setExpandedJob(expandedJob === job._id ? null : job._id)}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>{job.title}</span>
-                    <button className="btn-secondary" onClick={(e) => { e.stopPropagation(); navigate(`/jobs/${job._id}`); }}>{t('view_details')}</button>
+                    <span className="job-title">
+                      {language === 'en' ? job.title : (translatedTitles[job.title] || job.title)}
+                    </span>
+                    {job.requireResume ? <span className="badge">{t('resume_required')}</span> : <span className="badge success">{t('resume_optional')}</span>}
                   </div>
                   {expandedJob === job._id && (
-                    <div style={{ marginTop: 10 }}>
-                      <div style={{ color: '#6b7280', marginBottom: 6 }}>{job.company} • {job.location}</div>
-                      <div style={{ marginBottom: 10 }}>{job.description}</div>
-                      <button className="btn-secondary" onClick={(e) => { e.stopPropagation(); toggleSave(job._id); }}>
-                        {savedJobIds.includes(job._id) ? t('unsave') : t('save')}
-                      </button>
+                    <div style={{ marginTop: 16, fontWeight: 400 }}>
+                      <div className="job-meta">{job.company} • {job.location}</div>
+                      <div style={{ marginBottom: 16, color: 'var(--text-primary)', lineHeight: 1.6 }}>{job.description}</div>
+                      <div style={{ display: 'flex', gap: 12 }}>
+                        <button className="btn-primary" disabled={appliedJobIds.includes(job._id)} onClick={(e) => { e.stopPropagation(); handleApplyOpen(job); }}>
+                          {appliedJobIds.includes(job._id) ? t('applied') : t('apply')}
+                        </button>
+                        <button className="btn-secondary" onClick={(e) => { e.stopPropagation(); navigate(`/jobs/${job._id}`); }}>{t('view_details')}</button>
+                      </div>
                     </div>
                   )}
                 </li>
               ))}
             </ul>
           )}
+          {error && <div className="error">{error}</div>}
+          {success && <div className="success">{success}</div>}
         </div>
       )}
 
       {section === 'applications' && (
-        <div style={{ width: '100%', maxWidth: 600, margin: '24px auto' }}>
+        <div className="content-section">
           <h3>{t('my_applications')}</h3>
-          {loading ? <div>{t('loading')}</div> : applications.length === 0 ? <div>{t('no_applications_yet')}</div> : (
-            <ul style={{ listStyle: 'none', padding: 0 }}>
+          {loading ? <div className="loading">{t('loading_applications')}</div> : applications.length === 0 ? <div className="loading">{t('no_applications_yet')}</div> : (
+            <div style={{ maxWidth: '800px', margin: '0 auto' }}>
               {applications.map(app => (
-                <li key={app._id} style={{ border: '1px solid #eee', borderRadius: 6, margin: '16px 0', padding: 16 }}>
-                  <div><b>{app.job?.title}</b> at {app.job?.company} ({app.job?.location})</div>
-                  <div>Status: <b>{app.status}</b></div>
-                </li>
+                <div key={app._id} className="job-card" onClick={() => handleApplicationClick(app)} style={{ cursor: 'pointer' }}>
+                  <div className="job-title">
+                    {language === 'en' ? app.job?.title : (translatedTitles[app.job?.title] || app.job?.title)}
+                  </div>
+                  <div className="job-meta">{app.job?.company} • {app.job?.location}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span>{t('status')}:</span>
+                    <span className={`badge ${app.status === 'accepted' ? 'success' : ''}`}>
+                      {t(app.status)}
+                    </span>
+                  </div>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
-          {error && <div style={{ color: 'red', marginTop: 10 }}>{error}</div>}
+          {error && <div className="error">{error}</div>}
         </div>
       )}
 
@@ -497,11 +340,11 @@ function JobSeekerDashboard({ onLogout }) {
       {showApply && (
         <div className="modal-overlay" onClick={() => setShowApply(false)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <h3>{t('apply_for')} {applyForJob?.title}</h3>
+            <h3>{t('apply')} for {applyForJob?.title}</h3>
             {applyForJob?.requireResume ? (
               <div style={{ marginBottom: 10 }} className="badge">{t('resume_required')}</div>
             ) : (
-              <div className="badge" style={{ marginBottom: 10, background: '#ecfdf5', color: '#065f46' }}>{t('resume_optional')}</div>
+              <div className="badge success" style={{ marginBottom: 10 }}>{t('resume_optional')}</div>
             )}
             <form onSubmit={handleApplySubmit}>
               <div className="form-grid">
@@ -513,25 +356,104 @@ function JobSeekerDashboard({ onLogout }) {
                   <label className="label">{t('age')}</label>
                   <input className="input" type="number" value={applyForm.age} onChange={e => setApplyForm({ ...applyForm, age: e.target.value })} required />
                 </div>
-                <div>
-                  <label className="label">Email (optional)</label>
+                <div className="full">
+                  <label className="label">{t('address')}</label>
+                  <input className="input" value={applyForm.address} onChange={e => setApplyForm({ ...applyForm, address: e.target.value })} required />
+                </div>
+                <div className="full">
+                  <label className="label">{t('email_optional')}</label>
                   <input className="input" type="email" value={applyForm.email} onChange={e => setApplyForm({ ...applyForm, email: e.target.value })} />
                 </div>
                 <div className="full">
-                  <label className="label">{t('address')}</label>
-                  <textarea className="textarea" value={applyForm.address} onChange={e => setApplyForm({ ...applyForm, address: e.target.value })} required />
-                </div>
-                <div className="full">
-                  <label className="label">{t('resume_upload')}</label>
+                  <label className="label">{t('upload_resume')}</label>
                   <input className="input" type="file" accept=".pdf,.doc,.docx" onChange={e => setResume(e.target.files[0])} />
                 </div>
               </div>
-              <div className="modal-actions">
+              <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
                 <button type="button" className="btn-secondary" onClick={() => setShowApply(false)}>{t('cancel')}</button>
                 <button type="submit" className="btn-primary">{t('submit_application')}</button>
               </div>
             </form>
-            {error && <div style={{ color: 'red', marginTop: 10 }}>{error}</div>}
+            {error && <div className="error">{error}</div>}
+          </div>
+        </div>
+      )}
+
+      {showAppDetailsModal && selectedApplication && (
+        <div className="modal-overlay" onClick={() => setShowAppDetailsModal(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <h3>{t('my_application_details')}</h3>
+            <div className="form-grid">
+              <div className="full">
+                <label className="label">{t('applied_for')}</label>
+                <div className="input" style={{ background: '#f8f9fa', border: 'none' }}>
+                  {language === 'en' ? selectedApplication.job?.title : (translatedTitles[selectedApplication.job?.title] || selectedApplication.job?.title)}
+                </div>
+              </div>
+              <div>
+                <label className="label">{t('company')}</label>
+                <div className="input" style={{ background: '#f8f9fa', border: 'none' }}>
+                  {selectedApplication.job?.company}
+                </div>
+              </div>
+              <div>
+                <label className="label">{t('location')}</label>
+                <div className="input" style={{ background: '#f8f9fa', border: 'none' }}>
+                  {selectedApplication.job?.location}
+                </div>
+              </div>
+              <div>
+                <label className="label">{t('full_name')}</label>
+                <div className="input" style={{ background: '#f8f9fa', border: 'none' }}>
+                  {selectedApplication.applicantName}
+                </div>
+              </div>
+              <div>
+                <label className="label">{t('age')}</label>
+                <div className="input" style={{ background: '#f8f9fa', border: 'none' }}>
+                  {selectedApplication.age}
+                </div>
+              </div>
+              <div className="full">
+                <label className="label">{t('address')}</label>
+                <div className="input" style={{ background: '#f8f9fa', border: 'none' }}>
+                  {selectedApplication.address}
+                </div>
+              </div>
+              <div>
+                <label className="label">{t('email_optional')}</label>
+                <div className="input" style={{ background: '#f8f9fa', border: 'none' }}>
+                  {selectedApplication.email || '-'}
+                </div>
+              </div>
+              <div>
+                <label className="label">{t('status')}</label>
+                <div className="input" style={{ background: '#f8f9fa', border: 'none' }}>
+                  <span className={`badge ${selectedApplication.status === 'accepted' ? 'success' : ''}`}>
+                    {t(selectedApplication.status)}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <label className="label">{t('application_date')}</label>
+                <div className="input" style={{ background: '#f8f9fa', border: 'none' }}>
+                  {selectedApplication.createdAt ? new Date(selectedApplication.createdAt).toLocaleDateString() : '-'}
+                </div>
+              </div>
+              {selectedApplication.resumePath && (
+                <div className="full">
+                  <label className="label">{t('resume_file')}</label>
+                  <div style={{ marginTop: 8 }}>
+                    <a href={selectedApplication.resumePath} target="_blank" rel="noreferrer" className="btn-secondary">
+                      {t('view_resume')}
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={() => setShowAppDetailsModal(false)}>{t('close')}</button>
+            </div>
           </div>
         </div>
       )}

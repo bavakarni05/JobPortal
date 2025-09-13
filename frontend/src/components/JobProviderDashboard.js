@@ -119,22 +119,69 @@ function JobProviderDashboard({ onLogout }) {
     } catch { alert(t('error_network')); }
   };
 
+  const handleSelect = async (applicationId) => {
+    try {
+      const res = await fetch(`/api/applications/${applicationId}/select`, { method: 'PATCH' });
+      const data = await res.json();
+      if (res.ok) {
+        alert('Applicant selected successfully!');
+        fetchJobs(); // Refresh the jobs to update application statuses
+        if (data.chatId) {
+          setInitialChatId(data.chatId);
+          setSection('chats');
+        }
+      } else {
+        alert(data.error || 'Failed to select applicant');
+      }
+    } catch {
+      alert(t('error_network'));
+    }
+  };
+
+  const handleMessage = async (applicationId) => {
+    try {
+      const res = await fetch(`/api/applications/${applicationId}`);
+      const data = await res.json();
+      if (res.ok) {
+        // Check if chat exists, if not create one
+        const chatRes = await fetch('/api/chats/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            jobId: data.job._id, 
+            applicationId: applicationId,
+            jobProviderUsername: username,
+            applicantUsername: data.applicant?.username
+          })
+        });
+        const chatData = await chatRes.json();
+        if (chatRes.ok) {
+          setInitialChatId(chatData.chatId);
+          setSection('chats');
+        }
+      }
+    } catch {
+      alert(t('error_network'));
+    }
+  };
+
   return (
-    <div className="dashboard-container" style={{ paddingTop: 64 }}>
+    <div className="dashboard-container">
       <div className="header-bar">
-        <div className="header-title">{t('app_title')}</div>
+        <div className="header-title">Women Job Portal</div>
         <div className="header-nav">
           <button className={section === 'home' ? 'active' : ''} onClick={() => setSection('home')}>{t('home')}</button>
           <button className={section === 'add' ? 'active' : ''} onClick={() => setSection('add')}>{t('add_job')}</button>
-          <button className={section === 'view' ? 'active' : ''} onClick={() => setSection('view')}>{t('view_jobs')}</button>
+          <button className={section === 'view' ? 'active' : ''} onClick={() => setSection('view')}>{t('my_jobs')}</button>
           <button className={section === 'chats' ? 'active' : ''} onClick={() => setSection('chats')}>{t('chats')}</button>
         </div>
         <div className="header-profile" onClick={() => setShowProfileMenu(v => !v)}>
           <div className="profile-icon">{username[0]?.toUpperCase() || 'P'}</div>
+          <span className="profile-name">{username}</span>
           {showProfileMenu && (
-            <div style={{ position: 'absolute', top: 56, right: 24, background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.12)', borderRadius: 8, padding: 12, zIndex: 200 }}>
-              <div style={{ marginBottom: 8, fontWeight: 500 }}>{username}</div>
-              <button onClick={onLogout} style={{ background: '#e75480', color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer' }}>{t('logout')}</button>
+            <div className="profile-menu">
+              <div className="profile-menu-header">{username}</div>
+              <button onClick={onLogout}>{t('logout')}</button>
             </div>
           )}
         </div>
@@ -142,9 +189,24 @@ function JobProviderDashboard({ onLogout }) {
 
       {section === 'home' && (
         <div style={{ width: '100%', margin: 0 }}>
-          <div className="hero-banner hero-full" style={{ backgroundImage: `url(${womenImage})` }}>
-            <div className="hero-overlay"></div>
-            <div className="hero-text">{t('empowering')}</div>
+          <div className="hero-section">
+            <div className="hero-content">
+              <div className="hero-text-section">
+                <h1 className="hero-title">{t('empower_women')}</h1>
+                <p className="hero-subtitle">{t('discover')}</p>
+                <div className="hero-actions">
+                  <button className="btn-primary hero-btn" onClick={() => setSection('add')}>
+                    {t('add_job')}
+                  </button>
+                  <button className="btn-secondary hero-btn" onClick={() => setSection('view')}>
+                    {t('my_jobs')}
+                  </button>
+                </div>
+              </div>
+              <div className="hero-image-section">
+                <img src={womenImage} alt="Women empowerment" className="hero-image" />
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -234,80 +296,58 @@ function JobProviderDashboard({ onLogout }) {
               <button type="submit" className="btn-primary">{t('add')}</button>
             </div>
           </form>
-          {error && <div style={{ color: 'red', marginTop: 10 }}>{error}</div>}
-          {success && <div style={{ color: 'green', marginTop: 10 }}>{success}</div>}
+          {error && <div className="error">{error}</div>}
+          {success && <div className="success">{success}</div>}
         </div>
       )}
 
       {section === 'view' && (
-        <div style={{ width: '100%', maxWidth: 720, margin: '24px auto' }}>
+        <div className="content-section">
           <h3>{t('my_jobs')}</h3>
           <div className="search-bar">
             <input className="search-input" placeholder={t('search_placeholder')} value={query} onChange={(e) => handleSearch(e.target.value)} />
             <button className="search-button" onClick={() => handleSearch('')}>{t('reset')}</button>
           </div>
-          {loading ? <div>{t('loading')}</div> : jobs.length === 0 ? <div>No jobs posted yet.</div> : (
-            <ul style={{ listStyle: 'none', padding: 0 }}>
+          {loading ? <div className="loading">{t('loading')}</div> : jobs.length === 0 ? <div className="loading">No jobs posted yet.</div> : (
+            <ul className="title-list">
               {jobs.map(job => (
-                <li key={job._id} className="job-card">
+                <li key={job._id} className="title-item" onClick={() => handleToggleDetails(job._id)}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div className="job-title" onClick={() => handleToggleDetails(job._id)}>
-                        {job.title}
-                      </div>
-                      <div className="job-meta">{job.company} • {job.location} {job.requireResume && <span className="badge" style={{ marginLeft: 8 }}>{t('resume_required')}</span>}</div>
-                    </div>
-                    <button className="btn-secondary" onClick={() => handleDeleteJob(job._id)}>Delete</button>
+                    <span className="job-title">{job.title}</span>
+                    <button className="btn-secondary" onClick={(e) => { e.stopPropagation(); handleDeleteJob(job._id); }}>{t('delete')}</button>
                   </div>
                   {expandedJob === job._id && (
-                    <div style={{ marginTop: 12 }}>
-                      <div style={{ marginBottom: 8 }}>{job.description}</div>
-                      <div className="badge">{t('applications')}</div>
-                      <div style={{ marginTop: 8 }}>
-                        {applications[job._id] ? (
-                          applications[job._id].length === 0 ? <div>{t('no_applications_yet')}</div> : (
-                            <ul style={{ listStyle: 'none', padding: 0 }}>
-                              {applications[job._id].map(app => (
-                                <li key={app._id} style={{ borderBottom: '1px solid #f1f5f9', padding: '8px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <div>
-                                    <div style={{ fontWeight: 600, cursor: 'pointer' }} onClick={() => openApplication(app._id)}>{app.applicant?.username}</div>
-                                    <div style={{ fontSize: '0.9rem', color: '#6b7280' }}>{app.email || app.applicant?.profile?.email || 'No email'}</div>
-                                    <div style={{ fontSize: '0.9rem' }}>Status: <b>{app.status}</b></div>
-                                  </div>
-                                  <div style={{ display: 'flex', gap: 8 }}>
-                                    {app.status !== 'accepted' && (
-                                      <button className="btn-primary" onClick={async () => {
-                                        try {
-                                          const res = await fetch(`/api/applications/${app._id}/select`, { method: 'PATCH' });
-                                          const data = await res.json();
-                                          if (res.ok) {
-                                            const r = await fetch(`/api/jobs/${job._id}/applications`);
-                                            const d = await r.json();
-                                            if (r.ok) setApplications(s => ({ ...s, [job._id]: d }));
-                                            setInitialChatId(data.chatId);
-                                            setSection('chats');
-                                          } else alert(data.error || 'Failed to select applicant');
-                                        } catch {
-                                          alert(t('error_network'));
-                                        }
-                                      }}>{t('apply')}</button>
-                                    )}
-                                    {app.status === 'accepted' && (
-                                      <button className="btn-secondary" onClick={() => setSection('chats')}>Message</button>
-                                    )}
-                                  </div>
-                                </li>
-                              ))}
-                            </ul>
-                          )
-                        ) : <div>Loading applications...</div>}
-                      </div>
+                    <div style={{ marginTop: 16, fontWeight: 400 }}>
+                      <div className="job-meta">{job.company} • {job.location}</div>
+                      <div style={{ marginBottom: 16, color: 'var(--text-primary)', lineHeight: 1.6 }}>{job.description}</div>
+                      <div style={{ fontWeight: 600, marginBottom: 12, color: 'var(--primary-blue)' }}>{t('applications')}:</div>
+                      {applications[job._id]?.length === 0 ? <div className="loading">No applications yet.</div> : (
+                        <div style={{ display: 'grid', gap: 12 }}>
+                          {applications[job._id]?.map(app => (
+                            <div key={app._id} className="job-card" style={{ margin: 0 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                <span style={{ fontWeight: 600 }}>{app.applicantName || app.applicant?.username}</span>
+                                <span className={`badge ${app.status === 'accepted' ? 'success' : ''}`}>{app.status}</span>
+                              </div>
+                              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                <button className="btn-primary" onClick={() => openApplication(app._id)}>{t('view')}</button>
+                                {(app.status === 'pending' || app.status === 'applied') && (
+                                  <button className="btn-primary" onClick={() => handleSelect(app._id)}>{t('select')}</button>
+                                )}
+                                <button className="btn-secondary" onClick={() => handleMessage(app._id)}>{t('message')}</button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </li>
               ))}
             </ul>
           )}
+          {error && <div className="error">{error}</div>}
+          {success && <div className="success">{success}</div>}
         </div>
       )}
 

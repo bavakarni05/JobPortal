@@ -71,7 +71,10 @@ function Chats({ initialChatId }) {
         <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
           {chats.map(c => (
             <li key={c._id} onClick={() => openChat(c)} style={{ padding: '10px 8px', borderBottom: '1px solid #f1f5f9', cursor: 'pointer', fontWeight: activeChat?._id === c._id ? 700 : 500 }}>
-              {c.job?.title}
+              <div style={{ fontWeight: 600, fontSize: '14px' }}>{c.job?.title}</div>
+              <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
+                {c.participants?.find(p => p.username !== username)?.username || 'Unknown User'}
+              </div>
             </li>
           ))}
         </ul>
@@ -81,10 +84,16 @@ function Chats({ initialChatId }) {
           <>
             <div style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: 8, marginBottom: 8 }}>
               <b>{activeChat.job?.title}</b>
+              <div style={{ fontSize: '14px', color: '#6b7280', marginTop: '4px' }}>
+                Chat with: {activeChat.participants?.find(p => p.username !== username)?.username || 'Unknown User'}
+              </div>
             </div>
             <div style={{ height: 280, overflowY: 'auto', paddingRight: 4 }}>
               {messages.map(m => (
                 <div key={m._id} style={{ margin: '8px 0', textAlign: m.sender?.username === username ? 'right' : 'left' }}>
+                  <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', textAlign: m.sender?.username === username ? 'right' : 'left' }}>
+                    {m.sender?.username}
+                  </div>
                   <div style={{ display: 'inline-block', background: m.sender?.username === username ? '#e75480' : '#f3f4f6', color: m.sender?.username === username ? '#fff' : '#111827', padding: '8px 12px', borderRadius: 12 }}>
                     {m.content}
                   </div>

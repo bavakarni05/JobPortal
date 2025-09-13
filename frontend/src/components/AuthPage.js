@@ -57,8 +57,8 @@ function AuthPage({ onLogin }) {
 
   return (
     <div className="auth-container">
-      <div className="form-card" style={{ maxWidth: 420 }}>
-        <h2 style={{ marginTop: 0, textAlign: 'center' }}>{isSignup ? t('sign_up') : t('login')}</h2>
+      <div className="auth-card">
+        <h2>{isSignup ? t('sign_up') : t('login')}</h2>
         <form onSubmit={handleSubmit} className="auth-form">
           <div>
             <label className="label">{t('username')}</label>
@@ -71,7 +71,7 @@ function AuthPage({ onLogin }) {
           {isSignup && (
             <div>
               <label className="label">{t('role')}</label>
-              <select className="input" value={role} onChange={e => setRole(e.target.value)}>
+              <select className="select" value={role} onChange={e => setRole(e.target.value)}>
                 <option value="jobseeker">{t('job_seeker')}</option>
                 <option value="jobprovider">{t('job_provider')}</option>
               </select>
@@ -81,9 +81,11 @@ function AuthPage({ onLogin }) {
             <button type="button" className="btn-secondary" onClick={() => { setIsSignup(!isSignup); setError(''); }}>
               {isSignup ? t('login') : t('sign_up')}
             </button>
-            <button type="submit" className="btn-primary" disabled={loading}>{isSignup ? t('sign_up') : t('login')}</button>
+            <button type="submit" className="btn-primary" disabled={loading}>
+              {loading ? 'Loading...' : (isSignup ? t('sign_up') : t('login'))}
+            </button>
           </div>
-          {error && <div style={{ color: 'red', marginTop: 10 }}>{error}</div>}
+          {error && <div className="error">{error}</div>}
         </form>
       </div>
     </div>

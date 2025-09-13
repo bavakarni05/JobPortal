@@ -108,13 +108,14 @@ mongoose.connect(MONGO_URI, {
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.error('MongoDB connection error:', err));
 
-const User = mongoose.model('User');
+const User = require('./models/User');
 const bcrypt = require('bcrypt');
-const Job = mongoose.model('Job');
-const Application = mongoose.model('Application');
-const Chat = mongoose.model('Chat');
-const Message = mongoose.model('Message');
-const Saved = mongoose.model('Saved');
+const Job = require('./models/Job');
+const Application = require('./models/Application');
+const Chat = require('./models/Chat');
+const Message = require('./models/Message');
+const Saved = require('./models/Saved');
+const Notification = require('./models/Notification');
 
 // Socket.IO events
 io.on('connection', (socket) => {
@@ -420,6 +421,15 @@ app.patch('/api/applications/:applicationId/select', async (req, res) => {
       { $set: { status: 'rejected' } }
     );
 
+    // Create notification for selected applicant
+    await Notification.create({
+      recipient: application.applicant.username,
+      message: `Congratulations! You have been selected for the position: ${application.job.title}`,
+      type: 'selection',
+      jobId: application.job._id,
+      applicationId: application._id
+    });
+
     const job = await Job.findById(application.job).populate('postedBy');
     let chat = await Chat.findOne({ job: job._id, application: application._id });
     if (!chat) {
@@ -446,6 +456,57 @@ app.get('/api/chats', async (req, res) => {
   }
 });
 
+// Get notifications for a user
+app.get('/api/notifications', async (req, res) => {
+  const { username } = req.query;
+  if (!username) return res.status(400).json({ error: 'Username required' });
+  try {
+    const notifications = await Notification.find({ recipient: username, read: false })
+      .populate('jobId', 'title')
+      .sort({ createdAt: -1 })
+      .limit(20);
+    res.json(notifications);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Mark notification as read
+app.patch('/api/notifications/:notificationId/read', async (req, res) => {
+  try {
+    await Notification.findByIdAndUpdate(req.params.notificationId, { read: true });
+    res.json({ message: 'Notification marked as read' });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Create or get chat for messaging
+app.post('/api/chats/create', async (req, res) => {
+  const { jobId, applicationId, jobProviderUsername, applicantUsername } = req.body;
+  try {
+    const jobProvider = await User.findOne({ username: jobProviderUsername });
+    const applicant = await User.findOne({ username: applicantUsername });
+    
+    if (!jobProvider || !applicant) {
+      return res.status(404).json({ error: 'Users not found' });
+    }
+
+    let chat = await Chat.findOne({ job: jobId, application: applicationId });
+    if (!chat) {
+      chat = await Chat.create({ 
+        participants: [jobProvider._id, applicant._id], 
+        job: jobId, 
+        application: applicationId 
+      });
+    }
+    
+    res.json({ chatId: chat._id });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 app.get('/api/chats/:chatId/messages', async (req, res) => {
   const { chatId } = req.params;
   try {
@@ -463,9 +524,25 @@ app.post('/api/chats/:chatId/messages', async (req, res) => {
   try {
     const user = await User.findOne({ username });
     if (!user) return res.status(400).json({ error: 'Invalid user' });
+    
+    const chat = await Chat.findById(chatId).populate('participants', 'username').populate('job', 'title');
+    if (!chat) return res.status(404).json({ error: 'Chat not found' });
+    
     const msg = await Message.create({ chat: chatId, sender: user._id, content });
     const populated = await Message.findById(msg._id).populate('sender', 'username');
     await Chat.findByIdAndUpdate(chatId, { lastMessageAt: new Date() });
+    
+    // Create notification for the other participant
+    const recipient = chat.participants.find(p => p.username !== username);
+    if (recipient) {
+      await Notification.create({
+        recipient: recipient.username,
+        message: `You have a new message from ${username} regarding: ${chat.job?.title || 'Job Application'}`,
+        type: 'message',
+        jobId: chat.job?._id
+      });
+    }
+    
     io.to(chatId).emit('newMessage', populated);
     res.status(201).json(populated);
   } catch (err) {
