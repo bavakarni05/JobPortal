@@ -29,6 +29,7 @@ function JobSeekerDashboard({ onLogout }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
   const [me, setMe] = useState({});
+  const [meLoading, setMeLoading] = useState(true);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [verifyEmail, setVerifyEmail] = useState('');
   const [otp, setOtp] = useState('');
@@ -47,6 +48,12 @@ function JobSeekerDashboard({ onLogout }) {
     // eslint-disable-next-line
   }, [section]);
 
+  // Separate useEffect to ensure fetchMe is called on mount
+  useEffect(() => {
+    fetchMe();
+    // eslint-disable-next-line
+  }, []);
+
   const fetchNotifications = async () => {
     try {
       const res = await fetch(`/api/notifications?username=${username}`);
@@ -63,10 +70,21 @@ function JobSeekerDashboard({ onLogout }) {
 
   const fetchMe = async () => {
     try {
+      setMeLoading(true);
       const res = await fetch(`/api/me?username=${username}`);
       const data = await res.json();
-      if (res.ok) setMe(data || {});
-    } catch {}
+      console.log('Debug - fetchMe response:', data);
+      if (res.ok) {
+        setMe(data || {});
+        return data;
+      }
+      return null;
+    } catch (error) {
+      console.error('Debug - fetchMe error:', error);
+      return null;
+    } finally {
+      setMeLoading(false);
+    }
   };
 
   const fetchRecommendations = async () => {
@@ -124,10 +142,19 @@ function JobSeekerDashboard({ onLogout }) {
       });
       const data = await res.json();
       if (res.ok && data.verified) {
+        console.log('Debug - OTP confirmed, calling fetchMe');
         setShowVerifyModal(false);
         setOtp('');
         setOtpSent(false);
-        fetchMe();
+        const meData = await fetchMe();
+        console.log('Debug - meData after fetchMe:', meData);
+        console.log('Debug - meData.profile.emailVerified:', meData?.profile?.emailVerified);
+        // Force page refresh to update banner
+        setTimeout(() => {
+          console.log('Debug - About to refresh page');
+          window.location.reload();
+        }, 1000);
+        alert('Email verified successfully! Page will refresh.');
       } else alert(data.error || 'Invalid OTP');
     } catch {
       alert('Network error');
@@ -383,17 +410,7 @@ function JobSeekerDashboard({ onLogout }) {
         </div>
       </div>
 
-      {!me?.profile?.emailVerified && (
-        <div className="content-section" style={{ padding: 12, borderLeft: '4px solid #2563eb', background: '#eef2ff', marginTop: 12 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <div style={{ fontWeight: 600 }}>{t('verify_email_title') || 'Verify your email'}</div>
-              <div style={{ fontSize: 13, color: '#374151' }}>{t('verify_email_desc') || 'Verify your email to improve trust and messaging.'}</div>
-            </div>
-            <button className="btn-primary" onClick={() => { setShowVerifyModal(true); setVerifyEmail(me?.profile?.email || ''); }}>{t('verify_now') || 'Verify now'}</button>
-          </div>
-        </div>
-      )}
+      {/* Email verification banner temporarily removed for testing */}
 
       {section === 'recommendations' && (
         <div className="content-section">

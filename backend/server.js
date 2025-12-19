@@ -12,6 +12,8 @@ const crypto = require('crypto');
 const _fetch = (typeof fetch === 'function') ? fetch : (url, options) => (
   import('node-fetch').then(({ default: f }) => f(url, options))
 );
+// Import email service
+const { sendOTPEmail } = require('./emailService');
 
 // Import models (for registration)
 require('./models/User');
@@ -47,17 +49,30 @@ app.get('/api/me', async (req, res) => {
   } catch (e) { res.status(500).json({ error: 'Server error' }); }
 });
 
-// Send email verification OTP (demo: logs OTP to console)
+// Send email verification OTP (now sends real email)
 app.post('/api/verify/email/send', async (req, res) => {
   console.log('Debug - req.body:', req.body);
   const { username, email } = req.body || {};
   console.log('Debug - extracted username:', username, 'email:', email);
   if (!username || !email) return res.status(400).json({ error: 'username and email required' });
+  
   const otp = String(Math.floor(100000 + Math.random() * 900000));
   const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
   emailOtpStore.set(username, { otp, expiresAt, email });
-  console.log(`[OTP] Email OTP for ${username}: ${otp}`);
-  res.json({ sent: true });
+  
+  try {
+    const emailSent = await sendOTPEmail(email, otp, username);
+    if (emailSent) {
+      console.log(`[EMAIL] OTP sent successfully to ${email}`);
+      res.json({ sent: true });
+    } else {
+      console.log(`[EMAIL] Failed to send OTP to ${email}`);
+      res.status(500).json({ error: 'Failed to send email' });
+    }
+  } catch (error) {
+    console.error('Email service error:', error);
+    res.status(500).json({ error: 'Email service error' });
+  }
 });
 
 // Confirm email OTP

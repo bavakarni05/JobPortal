@@ -80,9 +80,14 @@ function JobProviderDashboard({ onLogout }) {
       const res = await fetch(`/api/me?username=${username}`);
       const data = await res.json();
       console.log('Debug - fetchMe response:', data);
-      if (res.ok) setMe(data || {});
+      if (res.ok) {
+        setMe(data || {});
+        return data;
+      }
+      return null;
     } catch (error) {
       console.error('Debug - fetchMe error:', error);
+      return null;
     }
   };
 
@@ -136,12 +141,13 @@ function JobProviderDashboard({ onLogout }) {
         setShowVerifyModal(false);
         setOtp('');
         setOtpSent(false);
-        await fetchMe();
-        // Force re-render to update banner
+        const meData = await fetchMe();
+        console.log('Debug - meData after fetchMe:', meData);
+        // Force page refresh to update banner
         setTimeout(() => {
-          console.log('Debug - me state after verification:', me);
-        }, 100);
-        alert('Email verified successfully!');
+          window.location.reload();
+        }, 1000);
+        alert('Email verified successfully! Page will refresh.');
       } else alert(data.error || 'Invalid OTP');
     } catch {
       alert('Network error');
@@ -392,7 +398,7 @@ function JobProviderDashboard({ onLogout }) {
         </div>
       </div>
 
-      {!me?.profile?.emailVerified && (
+      {!(me && me.profile && me.profile.emailVerified === true) && (
         <div className="content-section" style={{ padding: 12, borderLeft: '4px solid #2563eb', background: '#eef2ff', marginTop: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
