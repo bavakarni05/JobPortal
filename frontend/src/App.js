@@ -5,6 +5,7 @@ import JobSeekerDashboard from './components/JobSeekerDashboard';
 import JobProviderDashboard from './components/JobProviderDashboard';
 import JobDetails from './components/JobDetails';
 import './App.css';
+import './overrides.css';
 import { LanguageProvider } from './LanguageContext';
 import LanguageSelector from './components/LanguageSelector';
 

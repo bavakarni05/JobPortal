@@ -16,12 +16,12 @@ const UserSchema = new mongoose.Schema({
     enum: ['jobseeker', 'jobprovider'],
     required: true
   },
-  // Optional: add more profile fields as needed
+ 
   profile: {
     name: String,
     email: String,
     phone: String,
-    // Add more fields for jobseeker or jobprovider as needed
+  
   }
 }, { timestamps: true });
 

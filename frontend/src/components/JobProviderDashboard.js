@@ -20,11 +20,24 @@ function JobProviderDashboard({ onLogout }) {
   const [activeApp, setActiveApp] = useState(null);
   const [initialChatId, setInitialChatId] = useState(null);
 
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const [translated, setTranslated] = useState({}); // jobId -> { title, description, company, location }
   const username = localStorage.getItem('username') || 'JobProvider';
+  // Debug: Check localStorage content
+  console.log('localStorage username:', localStorage.getItem('username'));
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [me, setMe] = useState({});
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [verifyEmail, setVerifyEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
 
   useEffect(() => {
     if (section === 'view') fetchJobs();
+    fetchNotifications();
+    fetchMe();
     // eslint-disable-next-line
   }, [section]);
 
@@ -38,11 +51,164 @@ function JobProviderDashboard({ onLogout }) {
         setAllJobs(data);
         setJobs(data);
         setExpandedJob(null);
-      } else setError(data.error || 'Failed to fetch jobs');
+        if (language !== 'en') {
+          translateJobs(data);
+        } else {
+          setTranslated({});
+        }
+      } else setError(data.error || t('failed_to_fetch'));
     } catch {
       setError(t('error_network'));
     }
     setLoading(false);
+  };
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await fetch(`/api/notifications?username=${username}`);
+      const data = await res.json();
+      if (res.ok) {
+        setNotifications(data);
+        const unread = Array.isArray(data) ? data.filter(n => !n.read).length : 0;
+        setUnreadCount(unread);
+      }
+    } catch {}
+  };
+
+  const fetchMe = async () => {
+    try {
+      const res = await fetch(`/api/me?username=${username}`);
+      const data = await res.json();
+      console.log('Debug - fetchMe response:', data);
+      if (res.ok) setMe(data || {});
+    } catch (error) {
+      console.error('Debug - fetchMe error:', error);
+    }
+  };
+
+  // Email verification flow
+  const sendEmailOtp = async () => {
+    if (!verifyEmail) {
+      alert('Please enter an email address');
+      return;
+    }
+    if (!username || username === 'JobProvider' || username === 'JobSeeker') {
+      alert('User session not found. Please login again.');
+      return;
+    }
+    try {
+      const payload = { username: username.trim(), email: verifyEmail.trim() };
+      const res = await fetch('/api/verify/email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (res.ok && data.sent) {
+        setOtpSent(true);
+        alert('OTP sent successfully! Check console for OTP.');
+      } else {
+        alert(`Error: ${data.error || 'Failed to send OTP'}`);
+      }
+    } catch (error) {
+      alert('Network error: ' + error.message);
+    }
+  };
+
+  const confirmEmailOtp = async () => {
+    if (!otp) {
+      alert('Please enter the OTP');
+      return;
+    }
+    if (!username || username === 'JobProvider') {
+      alert('User session not found. Please login again.');
+      return;
+    }
+    try {
+      const res = await fetch('/api/verify/email/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, otp })
+      });
+      const data = await res.json();
+      if (res.ok && data.verified) {
+        console.log('Debug - OTP confirmed, calling fetchMe');
+        setShowVerifyModal(false);
+        setOtp('');
+        setOtpSent(false);
+        await fetchMe();
+        // Force re-render to update banner
+        setTimeout(() => {
+          console.log('Debug - me state after verification:', me);
+        }, 100);
+        alert('Email verified successfully!');
+      } else alert(data.error || 'Invalid OTP');
+    } catch {
+      alert('Network error');
+    }
+  };
+
+  // Re-translate when language changes while viewing jobs
+  useEffect(() => {
+    if (section === 'view' && jobs.length > 0) {
+      if (language !== 'en') {
+        setTranslated({});
+        translateJobs(jobs);
+      } else {
+        setTranslated({});
+      }
+    }
+    // eslint-disable-next-line
+  }, [language]);
+
+  const translateJobs = async (list) => {
+    const updates = {};
+    for (const j of list) {
+      try {
+        let newTitle = j.title;
+        if (j.title && language !== 'en') {
+          const r = await fetch('/api/translate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: j.title, target: language })
+          });
+          const d = await r.json();
+          if (r.ok && d.translatedText) newTitle = d.translatedText;
+        }
+        let newDesc = j.description;
+        if (j.description && language !== 'en') {
+          const r2 = await fetch('/api/translate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: j.description, target: language })
+          });
+          const d2 = await r2.json();
+          if (r2.ok && d2.translatedText) newDesc = d2.translatedText;
+        }
+        // Company
+        let newCompany = j.company;
+        if (j.company && language !== 'en') {
+          const rc = await fetch('/api/translate', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: j.company, target: language })
+          });
+          const dc = await rc.json();
+          if (rc.ok && dc.translatedText) newCompany = dc.translatedText;
+        }
+        // Location
+        let newLoc = j.location;
+        if (j.location && language !== 'en') {
+          const rl = await fetch('/api/translate', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: j.location, target: language })
+          });
+          const dl = await rl.json();
+          if (rl.ok && dl.translatedText) newLoc = dl.translatedText;
+        }
+        updates[j._id] = { title: newTitle, description: newDesc, company: newCompany, location: newLoc };
+      } catch {}
+    }
+    setTranslated(prev => ({ ...prev, ...updates }));
   };
 
   const handleSearch = (text) => {
@@ -73,11 +239,11 @@ function JobProviderDashboard({ onLogout }) {
       });
       const data = await res.json();
       if (res.ok) {
-        setSuccess('Job posted!');
+        setSuccess(t('job_posted'));
         setForm({ title: '', description: '', company: '', location: '', requireResume: false });
         setOptional({ jobType: 'job', workMode: 'onsite', category: '', durationWeeks: '', stipendMin: '', stipendMax: '', openings: '', skills: '', perks: '', startDate: '', applyBy: '' });
         setSection('view');
-      } else setError(data.error || 'Failed to post job');
+      } else setError(data.error || t('failed_to_post'));
     } catch {
       setError(t('error_network'));
     }
@@ -91,7 +257,7 @@ function JobProviderDashboard({ onLogout }) {
         const res = await fetch(`/api/jobs/${jobId}/applications`);
         const data = await res.json();
         if (res.ok) setApplications(apps => ({ ...apps, [jobId]: data }));
-        else setError(data.error || 'Failed to fetch applications');
+        else setError(data.error || t('failed_to_fetch'));
       } catch {
         setError(t('error_network'));
       }
@@ -99,12 +265,12 @@ function JobProviderDashboard({ onLogout }) {
   };
 
   const handleDeleteJob = async (jobId) => {
-    if (!window.confirm('Delete this job? This cannot be undone.')) return;
+    if (!window.confirm(t('delete_confirm'))) return;
     try {
       const res = await fetch(`/api/jobs/${jobId}`, { method: 'DELETE' });
       const data = await res.json();
       if (res.ok) fetchJobs();
-      else alert(data.error || 'Failed to delete');
+      else alert(data.error || t('failed_to_delete'));
     } catch {
       alert(t('error_network'));
     }
@@ -115,7 +281,7 @@ function JobProviderDashboard({ onLogout }) {
       const res = await fetch(`/api/applications/${applicationId}`);
       const data = await res.json();
       if (res.ok) { setActiveApp(data); setShowAppModal(true); }
-      else alert(data.error || 'Failed to load application');
+      else alert(data.error || t('failed_to_load_app'));
     } catch { alert(t('error_network')); }
   };
 
@@ -124,14 +290,14 @@ function JobProviderDashboard({ onLogout }) {
       const res = await fetch(`/api/applications/${applicationId}/select`, { method: 'PATCH' });
       const data = await res.json();
       if (res.ok) {
-        alert('Applicant selected successfully!');
+        alert(t('applicant_selected'));
         fetchJobs(); // Refresh the jobs to update application statuses
         if (data.chatId) {
           setInitialChatId(data.chatId);
           setSection('chats');
         }
       } else {
-        alert(data.error || 'Failed to select applicant');
+        alert(data.error || t('failed_to_select_applicant'));
       }
     } catch {
       alert(t('error_network'));
@@ -168,24 +334,103 @@ function JobProviderDashboard({ onLogout }) {
   return (
     <div className="dashboard-container">
       <div className="header-bar">
-        <div className="header-title">Women Job Portal</div>
+        <div className="header-title">{t('app_title')}</div>
         <div className="header-nav">
           <button className={section === 'home' ? 'active' : ''} onClick={() => setSection('home')}>{t('home')}</button>
           <button className={section === 'add' ? 'active' : ''} onClick={() => setSection('add')}>{t('add_job')}</button>
           <button className={section === 'view' ? 'active' : ''} onClick={() => setSection('view')}>{t('my_jobs')}</button>
           <button className={section === 'chats' ? 'active' : ''} onClick={() => setSection('chats')}>{t('chats')}</button>
         </div>
-        <div className="header-profile" onClick={() => setShowProfileMenu(v => !v)}>
-          <div className="profile-icon">{username[0]?.toUpperCase() || 'P'}</div>
-          <span className="profile-name">{username}</span>
-          {showProfileMenu && (
-            <div className="profile-menu">
-              <div className="profile-menu-header">{username}</div>
-              <button onClick={onLogout}>{t('logout')}</button>
-            </div>
-          )}
+        <div className="header-right">
+          <div
+            className="notification-bell"
+            onClick={() => {
+              setShowNotifications(v => {
+                const next = !v;
+                if (next) {
+                  setUnreadCount(0);
+                  fetch('/api/notifications/mark-read', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username })
+                  }).catch(() => {});
+                }
+                return next;
+              });
+            }}
+          >
+            <span className="bell-icon">🔔</span>
+            {unreadCount > 0 && !showNotifications && (
+              <span className="notification-badge">{unreadCount}</span>
+            )}
+            {showNotifications && (
+              <div className="notification-dropdown">
+                <div className="notification-header">{t('notifications')}</div>
+                {notifications.length === 0 ? (
+                  <div className="no-notifications">{t('no_notifications')}</div>
+                ) : (
+                  notifications.map(notif => (
+                    <div key={notif._id} className="notification-item">
+                      <div className="notification-text">{notif.message}</div>
+                      <div className="notification-time">{new Date(notif.createdAt).toLocaleDateString()}</div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+          <div className="header-profile" onClick={() => setShowProfileMenu(v => !v)}>
+            <div className="profile-icon">{username[0]?.toUpperCase() || 'P'}</div>
+            <span className="profile-name">{username}</span>
+            {showProfileMenu && (
+              <div className="profile-menu">
+                <div className="profile-menu-header">{username}</div>
+                <button onClick={onLogout}>{t('logout')}</button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
+      {!me?.profile?.emailVerified && (
+        <div className="content-section" style={{ padding: 12, borderLeft: '4px solid #2563eb', background: '#eef2ff', marginTop: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontWeight: 600 }}>{t('verify_email_title') || 'Verify your email'}</div>
+              <div style={{ fontSize: 13, color: '#374151' }}>{t('verify_email_desc') || 'Verify your email to improve trust and messaging.'}</div>
+            </div>
+            <button className="btn-primary" onClick={() => { setShowVerifyModal(true); setVerifyEmail(me?.profile?.email || ''); }}>{t('verify_now') || 'Verify now'}</button>
+          </div>
+        </div>
+      )}
+
+      {showVerifyModal && (
+        <div className="modal-overlay" onClick={() => setShowVerifyModal(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <h3>{t('verify_email') || 'Verify Email'}</h3>
+            <div className="form-grid">
+              <div className="full">
+                <label className="label">{t('email')}</label>
+                <input className="input" type="email" value={verifyEmail} onChange={e => setVerifyEmail(e.target.value)} placeholder="you@example.com" />
+              </div>
+              {otpSent && (
+                <div className="full">
+                  <label className="label">{t('otp')}</label>
+                  <input className="input" value={otp} onChange={e => setOtp(e.target.value)} placeholder="6-digit OTP" />
+                </div>
+              )}
+            </div>
+            <div className="modal-actions" style={{ display: 'flex', gap: 12 }}>
+              {!otpSent ? (
+                <button className="btn-primary" onClick={sendEmailOtp}>{t('send_otp') || 'Send OTP'}</button>
+              ) : (
+                <button className="btn-primary" onClick={confirmEmailOtp}>{t('confirm') || 'Confirm'}</button>
+              )}
+              <button className="btn-secondary" onClick={() => setShowVerifyModal(false)}>{t('cancel') || 'Cancel'}</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {section === 'home' && (
         <div style={{ width: '100%', margin: 0 }}>
@@ -249,18 +494,23 @@ function JobProviderDashboard({ onLogout }) {
               </div>
               <div>
                 <label className="label">{t('category')}</label>
-                <input className="input" name="category" value={optional.category} onChange={handleOptionalChange} />
+                <select className="input" name="category" value={optional.category} onChange={handleOptionalChange}>
+                  <option value="">{t('select') || 'Select'}</option>
+                  {['Education','Healthcare','IT','Retail','Housekeeping','Caregiving','Administration','Sales','Food Service'].map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="label">{t('duration_weeks')}</label>
                 <input className="input" type="number" name="durationWeeks" value={optional.durationWeeks} onChange={handleOptionalChange} />
               </div>
               <div>
-                <label className="label">{t('stipend')} Min</label>
+                <label className="label">{t('stipend_min')}</label>
                 <input className="input" type="number" name="stipendMin" value={optional.stipendMin} onChange={handleOptionalChange} />
               </div>
               <div>
-                <label className="label">{t('stipend')} Max</label>
+                <label className="label">{t('stipend_max')}</label>
                 <input className="input" type="number" name="stipendMax" value={optional.stipendMax} onChange={handleOptionalChange} />
               </div>
               <div>
@@ -269,11 +519,11 @@ function JobProviderDashboard({ onLogout }) {
               </div>
               <div className="full">
                 <label className="label">{t('skills_csv')}</label>
-                <input className="input" name="skills" value={optional.skills} onChange={handleOptionalChange} placeholder="e.g. React, Node.js" />
+                <input className="input" name="skills" value={optional.skills} onChange={handleOptionalChange} placeholder={t('skills_placeholder')} />
               </div>
               <div className="full">
                 <label className="label">{t('perks_csv')}</label>
-                <input className="input" name="perks" value={optional.perks} onChange={handleOptionalChange} placeholder="e.g. Certificate, Letter of recommendation" />
+                <input className="input" name="perks" value={optional.perks} onChange={handleOptionalChange} placeholder={t('perks_placeholder')} />
               </div>
               <div>
                 <label className="label">{t('start_date')}</label>
@@ -308,26 +558,28 @@ function JobProviderDashboard({ onLogout }) {
             <input className="search-input" placeholder={t('search_placeholder')} value={query} onChange={(e) => handleSearch(e.target.value)} />
             <button className="search-button" onClick={() => handleSearch('')}>{t('reset')}</button>
           </div>
-          {loading ? <div className="loading">{t('loading')}</div> : jobs.length === 0 ? <div className="loading">No jobs posted yet.</div> : (
+          {loading ? <div className="loading">{t('loading')}</div> : jobs.length === 0 ? <div className="loading">{t('no_jobs_posted')}</div> : (
             <ul className="title-list">
               {jobs.map(job => (
                 <li key={job._id} className="title-item" onClick={() => handleToggleDetails(job._id)}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span className="job-title">{job.title}</span>
+                    <span className="job-title">{language === 'en' ? job.title : (translated[job._id]?.title || job.title)}</span>
                     <button className="btn-secondary" onClick={(e) => { e.stopPropagation(); handleDeleteJob(job._id); }}>{t('delete')}</button>
                   </div>
                   {expandedJob === job._id && (
                     <div style={{ marginTop: 16, fontWeight: 400 }}>
-                      <div className="job-meta">{job.company} • {job.location}</div>
-                      <div style={{ marginBottom: 16, color: 'var(--text-primary)', lineHeight: 1.6 }}>{job.description}</div>
+                      <div className="job-meta">{language === 'en' ? job.company : (translated[job._id]?.company || job.company)} • {language === 'en' ? job.location : (translated[job._id]?.location || job.location)}</div>
+                      <div style={{ marginBottom: 16, color: 'var(--text-primary)', lineHeight: 1.6 }}>
+                        {language === 'en' ? job.description : (translated[job._id]?.description || job.description)}
+                      </div>
                       <div style={{ fontWeight: 600, marginBottom: 12, color: 'var(--primary-blue)' }}>{t('applications')}:</div>
-                      {applications[job._id]?.length === 0 ? <div className="loading">No applications yet.</div> : (
+                      {applications[job._id]?.length === 0 ? <div className="loading">{t('no_applications_yet')}</div> : (
                         <div style={{ display: 'grid', gap: 12 }}>
                           {applications[job._id]?.map(app => (
                             <div key={app._id} className="job-card" style={{ margin: 0 }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                                 <span style={{ fontWeight: 600 }}>{app.applicantName || app.applicant?.username}</span>
-                                <span className={`badge ${app.status === 'accepted' ? 'success' : ''}`}>{app.status}</span>
+                                <span className={`badge ${app.status === 'accepted' ? 'success' : ''}`}>{t(app.status)}</span>
                               </div>
                               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                                 <button className="btn-primary" onClick={() => openApplication(app._id)}>{t('view')}</button>
@@ -358,22 +610,22 @@ function JobProviderDashboard({ onLogout }) {
       {showAppModal && activeApp && (
         <div className="modal-overlay" onClick={() => setShowAppModal(false)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <h3>Application Details</h3>
+            <h3>{t('application_details')}</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div><b>Name:</b> {activeApp.applicantName || activeApp.applicant?.profile?.name || activeApp.applicant?.username}</div>
-              <div><b>Age:</b> {activeApp.age || '-'}</div>
-              <div className="full"><b>Address:</b> {activeApp.address || '-'}</div>
-              <div><b>Contact:</b> {activeApp.contactNo || activeApp.applicant?.profile?.phone || '-'}</div>
-              <div><b>Status:</b> {activeApp.status}</div>
-              <div><b>Job:</b> {activeApp.job?.title}</div>
+              <div><b>{t('name')}:</b> {activeApp.applicantName || activeApp.applicant?.profile?.name || activeApp.applicant?.username}</div>
+              <div><b>{t('age')}:</b> {activeApp.age || '-'}</div>
+              <div className="full"><b>{t('address')}:</b> {activeApp.address || '-'}</div>
+              <div><b>{t('contact')}:</b> {activeApp.contactNo || activeApp.applicant?.profile?.phone || '-'}</div>
+              <div><b>{t('status')}:</b> {t(activeApp.status)}</div>
+              <div><b>{t('job')}:</b> {activeApp.job?.title}</div>
             </div>
             {activeApp.resumePath && (
               <div style={{ marginTop: 12 }}>
-                <a href={activeApp.resumePath} target="_blank" rel="noreferrer" className="btn-secondary">View Resume</a>
+                <a href={activeApp.resumePath} target="_blank" rel="noreferrer" className="btn-secondary">{t('view_resume')}</a>
               </div>
             )}
             <div className="modal-actions">
-              <button className="btn-secondary" onClick={() => setShowAppModal(false)}>Close</button>
+              <button className="btn-secondary" onClick={() => setShowAppModal(false)}>{t('close')}</button>
             </div>
           </div>
         </div>

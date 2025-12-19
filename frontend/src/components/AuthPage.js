@@ -6,6 +6,7 @@ function AuthPage({ onLogin }) {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('jobseeker'); // default role
   const [isSignup, setIsSignup] = useState(false);
+  const [preferredCategories, setPreferredCategories] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { t } = useLanguage();
@@ -20,7 +21,7 @@ function AuthPage({ onLogin }) {
         const res = await fetch('/api/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password, role })
+          body: JSON.stringify({ username, password, role, profile: role === 'jobseeker' ? { preferredCategories } : {} })
         });
         const data = await res.json();
         if (!res.ok) {
@@ -75,6 +76,26 @@ function AuthPage({ onLogin }) {
                 <option value="jobseeker">{t('job_seeker')}</option>
                 <option value="jobprovider">{t('job_provider')}</option>
               </select>
+            </div>
+          )}
+          {isSignup && role === 'jobseeker' && (
+            <div>
+              <label className="label">{t('preferred_categories') || 'Preferred Categories'}</label>
+              <select
+                className="select"
+                multiple
+                value={preferredCategories}
+                onChange={(e) => {
+                  const opts = Array.from(e.target.selectedOptions).map(o => o.value);
+                  setPreferredCategories(opts);
+                }}
+                style={{ height: 100 }}
+              >
+                {['Education', 'Healthcare', 'IT', 'Retail', 'Housekeeping', 'Caregiving', 'Administration', 'Sales', 'Food Service'].map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+              <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>{t('hold_ctrl_to_select_multiple') || 'Hold Ctrl/Cmd to select multiple'}</div>
             </div>
           )}
           <div className="actions">

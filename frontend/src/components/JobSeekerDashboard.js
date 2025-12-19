@@ -5,7 +5,7 @@ import { useLanguage } from '../LanguageContext';
 import womenImage from '../women1.jpg';
 
 function JobSeekerDashboard({ onLogout }) {
-  const [section, setSection] = useState('home'); // home | view | applications | chats
+  const [section, setSection] = useState('home'); // home | view | applications | chats | recommendations
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [jobs, setJobs] = useState([]);
   const [allJobs, setAllJobs] = useState([]);
@@ -23,8 +23,16 @@ function JobSeekerDashboard({ onLogout }) {
   const [translatedTitles, setTranslatedTitles] = useState({});
   const [showAppDetailsModal, setShowAppDetailsModal] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState(null);
+  const [initialChatId, setInitialChatId] = useState(null);
+  const [recommended, setRecommended] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [me, setMe] = useState({});
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [verifyEmail, setVerifyEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
 
   const username = localStorage.getItem('username') || 'JobSeeker';
   const navigate = useNavigate();
@@ -33,7 +41,9 @@ function JobSeekerDashboard({ onLogout }) {
   useEffect(() => {
     if (section === 'view') fetchJobs();
     if (section === 'applications') fetchApplications();
+    if (section === 'recommendations') fetchRecommendations();
     fetchNotifications();
+    fetchMe();
     // eslint-disable-next-line
   }, [section]);
 
@@ -41,9 +51,86 @@ function JobSeekerDashboard({ onLogout }) {
     try {
       const res = await fetch(`/api/notifications?username=${username}`);
       const data = await res.json();
-      if (res.ok) setNotifications(data);
+      if (res.ok) {
+        setNotifications(data);
+        const unread = Array.isArray(data) ? data.filter(n => !n.read).length : 0;
+        setUnreadCount(unread);
+      }
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
+    }
+  };
+
+  const fetchMe = async () => {
+    try {
+      const res = await fetch(`/api/me?username=${username}`);
+      const data = await res.json();
+      if (res.ok) setMe(data || {});
+    } catch {}
+  };
+
+  const fetchRecommendations = async () => {
+    try {
+      const res = await fetch(`/api/recommendations?username=${username}`);
+      const data = await res.json();
+      if (res.ok && Array.isArray(data)) setRecommended(data);
+    } catch {}
+  };
+
+  // Email verification flow
+  const sendEmailOtp = async () => {
+    if (!verifyEmail) {
+      alert('Please enter an email address');
+      return;
+    }
+    console.log('Debug - username:', username);
+    console.log('Debug - verifyEmail:', verifyEmail);
+    if (!username || username === 'JobProvider' || username === 'JobSeeker') {
+      alert('User session not found. Please login again.');
+      return;
+    }
+    try {
+      const payload = { username, email: verifyEmail };
+      console.log('Debug - sending payload:', payload);
+      const res = await fetch('/api/verify/email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      console.log('Debug - response:', data);
+      if (res.ok && data.sent) setOtpSent(true);
+      else alert(data.error || 'Failed to send OTP');
+    } catch (error) {
+      console.error('Debug - network error:', error);
+      alert('Network error');
+    }
+  };
+
+  const confirmEmailOtp = async () => {
+    if (!otp) {
+      alert('Please enter the OTP');
+      return;
+    }
+    if (!username || username === 'JobSeeker') {
+      alert('User session not found. Please login again.');
+      return;
+    }
+    try {
+      const res = await fetch('/api/verify/email/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, otp })
+      });
+      const data = await res.json();
+      if (res.ok && data.verified) {
+        setShowVerifyModal(false);
+        setOtp('');
+        setOtpSent(false);
+        fetchMe();
+      } else alert(data.error || 'Invalid OTP');
+    } catch {
+      alert('Network error');
     }
   };
 
@@ -73,7 +160,7 @@ function JobSeekerDashboard({ onLogout }) {
         const appRes = await fetch(`/api/my-applications?username=${username}`);
         const appData = await appRes.json();
         if (appRes.ok) setAppliedJobIds(appData.map(a => a.job?._id));
-      } else setError(data.error || t('failed_to_fetch') + ' jobs');
+      } else setError(data.error || t('failed_to_fetch_jobs'));
     } catch {
       setError(t('network_error'));
     }
@@ -119,7 +206,7 @@ function JobSeekerDashboard({ onLogout }) {
           translateJobTitles(data);
         }
       }
-      else setError(data.error || t('failed_to_fetch') + ' applications');
+      else setError(data.error || t('failed_to_fetch_applications'));
     } catch {
       setError(t('network_error'));
     }
@@ -165,12 +252,41 @@ function JobSeekerDashboard({ onLogout }) {
     setShowApply(true);
   };
 
+  const startChatWithProvider = async (job) => {
+    try {
+      let providerUsername = job?.postedBy?.username || job?.postedBy?.profile?.username;
+      if (!providerUsername) {
+        // fallback: refetch jobs to find provider
+        const r = await fetch('/api/all-jobs');
+        const d = await r.json();
+        if (r.ok) {
+          const found = Array.isArray(d) ? d.find(j => j._id === job._id) : null;
+          providerUsername = found?.postedBy?.username;
+        }
+      }
+      if (!providerUsername) { alert('Could not find job provider username for this job.'); return; }
+      const payload = { jobId: job._id, jobProviderUsername: providerUsername, applicantUsername: username };
+      const res = await fetch('/api/chats/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (res.ok && data.chatId) {
+        setInitialChatId(data.chatId);
+        setSection('chats');
+      } else {
+        alert(data.error || `Failed to start chat (status ${res.status})`);
+      }
+    } catch (e) { alert('Network error while starting chat'); }
+  };
+
   const handleApplySubmit = async (e) => {
     e.preventDefault();
     setError(''); setSuccess('');
     if (!applyForJob) return;
     if (applyForJob.requireResume && !resume) {
-      setError(t('resume_required') + ' for this job. Please upload your resume.');
+      setError(t('resume_required_msg'));
       return;
     }
     try {
@@ -192,7 +308,7 @@ function JobSeekerDashboard({ onLogout }) {
         setApplyForJob(null);
         setApplyForm({ applicantName: '', age: '', address: '', email: '' });
         setResume(null);
-      } else setError(data.error || t('failed_to_post') + ' application');
+      } else setError(data.error || t('failed_to_post_application'));
     } catch {
       setError(t('network_error'));
     }
@@ -206,17 +322,38 @@ function JobSeekerDashboard({ onLogout }) {
   return (
     <div className="dashboard-container">
       <div className="header-bar">
-        <div className="header-title">Women Job Portal</div>
+        <div className="header-title">{t('app_title')}</div>
         <div className="header-nav">
           <button className={section === 'home' ? 'active' : ''} onClick={() => setSection('home')}>{t('home')}</button>
           <button className={section === 'view' ? 'active' : ''} onClick={() => setSection('view')}>{t('view_jobs')}</button>
           <button className={section === 'applications' ? 'active' : ''} onClick={() => setSection('applications')}>{t('my_applications')}</button>
+          <button className={section === 'recommendations' ? 'active' : ''} onClick={() => setSection('recommendations')}>{t('recommendations') || 'Recommendations'}</button>
           <button className={section === 'chats' ? 'active' : ''} onClick={() => setSection('chats')}>{t('chats')}</button>
         </div>
         <div className="header-right">
-          <div className="notification-bell" onClick={() => setShowNotifications(v => !v)}>
+          <div
+            className="notification-bell"
+            onClick={async () => {
+              setShowNotifications(v => {
+                const next = !v;
+                if (next) {
+                  // opening dropdown => mark read
+                  setUnreadCount(0);
+                  // best-effort mark-read API
+                  fetch('/api/notifications/mark-read', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username })
+                  }).catch(() => {});
+                }
+                return next;
+              });
+            }}
+          >
             <span className="bell-icon">🔔</span>
-            {notifications.length > 0 && <span className="notification-badge">{notifications.length}</span>}
+            {unreadCount > 0 && !showNotifications && (
+              <span className="notification-badge">{unreadCount}</span>
+            )}
             {showNotifications && (
               <div className="notification-dropdown">
                 <div className="notification-header">{t('notifications')}</div>
@@ -246,6 +383,78 @@ function JobSeekerDashboard({ onLogout }) {
         </div>
       </div>
 
+      {!me?.profile?.emailVerified && (
+        <div className="content-section" style={{ padding: 12, borderLeft: '4px solid #2563eb', background: '#eef2ff', marginTop: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontWeight: 600 }}>{t('verify_email_title') || 'Verify your email'}</div>
+              <div style={{ fontSize: 13, color: '#374151' }}>{t('verify_email_desc') || 'Verify your email to improve trust and messaging.'}</div>
+            </div>
+            <button className="btn-primary" onClick={() => { setShowVerifyModal(true); setVerifyEmail(me?.profile?.email || ''); }}>{t('verify_now') || 'Verify now'}</button>
+          </div>
+        </div>
+      )}
+
+      {section === 'recommendations' && (
+        <div className="content-section">
+          <h3 style={{ textAlign: 'center' }}>{t('recommended_for_you') || 'Recommended for you'}</h3>
+          <div style={{ maxWidth: 900, margin: '16px auto' }}>
+            {recommended.length === 0 ? (
+              <div className="loading" style={{ textAlign: 'center' }}>
+                {t('no_recommendations_yet') || 'No recommendations yet. Try applying or refresh.'}
+                <div style={{ marginTop: 10 }}>
+                  <button className="btn-secondary" onClick={fetchRecommendations}>{t('refresh') || 'Refresh'}</button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <div style={{ width: '100%', maxWidth: 900 }}>
+                  {recommended.map(job => (
+                    <div key={job._id} className="job-card" style={{ margin: '0 0 16px 0' }}>
+                      <div className="job-title">{job.title}</div>
+                      <div className="job-meta">{job.company} • {job.location}</div>
+                      <div style={{ marginBottom: 12 }}>{job.description}</div>
+                      <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+                        <button className="btn-secondary" onClick={() => navigate(`/jobs/${job._id}`)}>{t('view_details')}</button>
+                        <button type="button" className="btn-primary" onClick={() => startChatWithProvider(job)}>{t('message')}</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {showVerifyModal && (
+        <div className="modal-overlay" onClick={() => setShowVerifyModal(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <h3>{t('verify_email') || 'Verify Email'}</h3>
+            <div className="form-grid">
+              <div className="full">
+                <label className="label">{t('email')}</label>
+                <input className="input" type="email" value={verifyEmail} onChange={e => setVerifyEmail(e.target.value)} placeholder="you@example.com" />
+              </div>
+              {otpSent && (
+                <div className="full">
+                  <label className="label">{t('otp')}</label>
+                  <input className="input" value={otp} onChange={e => setOtp(e.target.value)} placeholder="6-digit OTP" />
+                </div>
+              )}
+            </div>
+            <div className="modal-actions" style={{ display: 'flex', gap: 12 }}>
+              {!otpSent ? (
+                <button className="btn-primary" onClick={sendEmailOtp}>{t('send_otp') || 'Send OTP'}</button>
+              ) : (
+                <button className="btn-primary" onClick={confirmEmailOtp}>{t('confirm') || 'Confirm'}</button>
+              )}
+              <button className="btn-secondary" onClick={() => setShowVerifyModal(false)}>{t('cancel') || 'Cancel'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {section === 'home' && (
         <div style={{ width: '100%', margin: 0 }}>
           <div className="hero-section">
@@ -267,12 +476,14 @@ function JobSeekerDashboard({ onLogout }) {
               </div>
             </div>
           </div>
+          {/* Recommendations moved to its own section */}
         </div>
       )}
 
       {section === 'view' && (
         <div className="content-section">
           <h3>{t('available_jobs')}</h3>
+          {/* Recommendations moved to its own section */}
           <div className="search-bar">
             <input className="search-input" placeholder={t('search_jobs')} value={query} onChange={(e) => handleSearch(e.target.value)} />
             <button className="search-button" onClick={() => handleSearch('')}>{t('reset')}</button>
@@ -296,6 +507,7 @@ function JobSeekerDashboard({ onLogout }) {
                           {appliedJobIds.includes(job._id) ? t('applied') : t('apply')}
                         </button>
                         <button className="btn-secondary" onClick={(e) => { e.stopPropagation(); navigate(`/jobs/${job._id}`); }}>{t('view_details')}</button>
+                        <button type="button" className="btn-secondary" style={{ cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); startChatWithProvider(job); }}>{t('message')}</button>
                       </div>
                     </div>
                   )}
@@ -334,13 +546,13 @@ function JobSeekerDashboard({ onLogout }) {
       )}
 
       {section === 'chats' && (
-        <Chats />
+        <Chats initialChatId={initialChatId} />
       )}
 
       {showApply && (
         <div className="modal-overlay" onClick={() => setShowApply(false)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <h3>{t('apply')} for {applyForJob?.title}</h3>
+            <h3>{t('apply_for')} {applyForJob?.title}</h3>
             {applyForJob?.requireResume ? (
               <div style={{ marginBottom: 10 }} className="badge">{t('resume_required')}</div>
             ) : (

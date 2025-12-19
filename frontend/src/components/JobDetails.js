@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../LanguageContext';
 import { translateText } from '../utils/translateText';
+import '../job-details.css';
 
 function JobDetails() {
   const { jobId } = useParams();
@@ -152,12 +153,12 @@ function JobDetails() {
       <div className="header-bar">
         <div className="header-title" style={{ cursor: 'pointer' }} onClick={() => navigate(-1)}>{t('app_title')}</div>
       </div>
-      <div style={{ width: '100%', maxWidth: 600, margin: '0 auto', marginTop: 32 }}>
-        <h2>{translated?.title || job.title}</h2>
-        <div><b>{t('company')}:</b> {translated?.company || job.company}</div>
-        <div><b>{t('location')}:</b> {translated?.location || job.location}</div>
-        <div><b>{t('description')}:</b> {translated?.description || job.description}</div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '8px 0' }}>
+      <div className="job-details">
+        <h2 className="job-title-lg">{translated?.title || job.title}</h2>
+        <div className="meta-item"><span className="meta-label">{t('company')}:</span><span className="meta-value">{translated?.company || job.company}</span></div>
+        <div className="meta-item"><span className="meta-label">{t('location')}:</span><span className="meta-value">{translated?.location || job.location}</span></div>
+        <div className="description"><span className="meta-label">{t('description')}:</span> <span className="meta-value">{translated?.description || job.description}</span></div>
+        <div className="badge-group">
           {job.jobType && <span className="badge">{t('job_type')}: {job.jobType}</span>}
           {job.workMode && <span className="badge">{t('work_mode')}: {job.workMode}</span>}
           {typeof job.durationWeeks === 'number' && <span className="badge">{t('duration_weeks')}: {job.durationWeeks}</span>}
@@ -167,28 +168,30 @@ function JobDetails() {
           {job.applyBy && <span className="badge">{t('apply_by')}: {new Date(job.applyBy).toLocaleDateString()}</span>}
         </div>
         {(Array.isArray(job.skills) && job.skills.length > 0) && (
-          <div style={{ marginBottom: 8 }}>
-            <b>Skills:</b> {job.skills.join(', ')}
+          <div className="meta-item" style={{ marginBottom: 8 }}>
+            <span className="meta-label">{t('skills')}:</span><span className="meta-value">{job.skills.join(', ')}</span>
           </div>
         )}
         {(Array.isArray(job.perks) && job.perks.length > 0) && (
-          <div style={{ marginBottom: 8 }}>
-            <b>Perks:</b> {job.perks.join(', ')}
+          <div className="meta-item" style={{ marginBottom: 8 }}>
+            <span className="meta-label">{t('perks')}:</span><span className="meta-value">{job.perks.join(', ')}</span>
           </div>
         )}
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="action-row">
           <button onClick={isSpeaking ? stopSpeech : speakText} style={{ marginTop: 8 }}>
             {isSpeaking ? t('stop') : t('listen')}
           </button>
         </div>
-        <div style={{ fontSize: '0.95em', color: '#888', margin: '8px 0' }}>{t('posted_by')} {job.postedBy?.username || 'Unknown'}</div>
+        <div className="muted">{t('posted_by')} {job.postedBy?.username || 'Unknown'}</div>
         {!applied && username && (
-          <button onClick={openApply} style={{ marginTop: 16 }}>{t('apply')}</button>
+          <button onClick={openApply} className="btn-primary" style={{ marginTop: 12 }}>{t('apply')}</button>
         )}
-        {applied && <div style={{ color: 'green', marginTop: 12 }}>{t('applied')}</div>}
-        {error && <div style={{ color: 'red', marginTop: 10 }}>{error}</div>}
-        {success && <div style={{ color: 'green', marginTop: 10 }}>{success}</div>}
-        <button onClick={() => navigate(-1)} style={{ marginTop: 24 }}>{t('back')}</button>
+        {applied && <div className="success" style={{ marginTop: 12 }}>{t('applied')}</div>}
+        {error && <div className="error" style={{ marginTop: 10 }}>{error}</div>}
+        {success && <div className="success" style={{ marginTop: 10 }}>{success}</div>}
+        <div className="action-row" style={{ marginTop: 16 }}>
+          <button onClick={() => navigate(-1)} className="btn-secondary">{t('back')}</button>
+        </div>
       </div>
 
       {showApply && (

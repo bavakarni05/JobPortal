@@ -1,14 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
+import { useLanguage } from '../LanguageContext';
+import '../chat.css';
 
 const socket = io();
 
 function Chats({ initialChatId }) {
+  const { t } = useLanguage();
   const username = localStorage.getItem('username');
   const [chats, setChats] = useState([]);
   const [activeChat, setActiveChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
+  const [search, setSearch] = useState('');
+  const bodyRef = useRef(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimer = useRef(null);
 
   useEffect(() => {
     fetchChats();
@@ -16,11 +23,10 @@ function Chats({ initialChatId }) {
   }, []);
 
   useEffect(() => {
-    if (!initialChatId || chats.length === 0) return;
+    if (!initialChatId) return;
+    if (chats.length === 0) return; // will re-run when chats load
     const chat = chats.find(c => c._id === initialChatId);
-    if (chat) {
-      openChat(chat);
-    }
+    if (chat) openChat(chat);
     // eslint-disable-next-line
   }, [initialChatId, chats]);
 
@@ -31,15 +37,30 @@ function Chats({ initialChatId }) {
         return [...prev, msg];
       });
     });
+    socket.on('typing', ({ chatId, username: u }) => {
+      if (!activeChat || chatId !== activeChat._id) return;
+      setIsTyping(true);
+      clearTimeout(typingTimer.current);
+      typingTimer.current = setTimeout(() => setIsTyping(false), 1200);
+    });
     return () => {
       socket.off('newMessage');
+      socket.off('typing');
     };
   }, [activeChat]);
+
+  useEffect(() => {
+    // auto scroll to bottom
+    try { bodyRef.current && (bodyRef.current.scrollTop = bodyRef.current.scrollHeight); } catch {}
+  }, [messages, activeChat]);
 
   const fetchChats = async () => {
     const res = await fetch(`/api/chats?username=${username}`);
     const data = await res.json();
-    if (res.ok) setChats(data);
+    if (res.ok) {
+      const sorted = [...data].sort((a,b)=> new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0));
+      setChats(sorted);
+    }
   };
 
   const openChat = async (chat) => {
@@ -64,49 +85,70 @@ function Chats({ initialChatId }) {
     }
   };
 
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return chats;
+    return chats.filter(c => {
+      const other = c.participants?.find(p => p.username !== username)?.username || '';
+      return other.toLowerCase().includes(q) || (c.job?.title || '').toLowerCase().includes(q);
+    });
+  }, [search, chats, username]);
+
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16, width: '100%', maxWidth: 900, margin: '24px auto' }}>
-      <div style={{ background: '#fff', borderRadius: 10, boxShadow: '0 2px 10px rgba(0,0,0,0.05)', padding: 12 }}>
-        <h4>Your Chats</h4>
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-          {chats.map(c => (
-            <li key={c._id} onClick={() => openChat(c)} style={{ padding: '10px 8px', borderBottom: '1px solid #f1f5f9', cursor: 'pointer', fontWeight: activeChat?._id === c._id ? 700 : 500 }}>
-              <div style={{ fontWeight: 600, fontSize: '14px' }}>{c.job?.title}</div>
-              <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
-                {c.participants?.find(p => p.username !== username)?.username || 'Unknown User'}
-              </div>
-            </li>
-          ))}
+    <div className="chat-container">
+      <div className="chat-sidebar">
+        <div className="chat-search">
+          <input placeholder={t('search_jobs')} value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
+        <ul className="chat-list">
+          {filtered.map(c => {
+            const other = c.participants?.find(p => p.username !== username)?.username || t('unknown_user');
+            const time = c.lastMessageAt ? new Date(c.lastMessageAt).toLocaleTimeString() : '';
+            return (
+              <li key={c._id} className={`chat-item ${activeChat?._id === c._id ? 'active' : ''}`} onClick={() => openChat(c)}>
+                <div className="avatar">{other[0]?.toUpperCase() || '?'}</div>
+                <div className="chat-meta">
+                  <span className="chat-name">{other} {time && <small style={{marginLeft:6,color:'#6b7280'}}>{time}</small>}</span>
+                  <span className="chat-sub">{c.job?.title}</span>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       </div>
-      <div style={{ background: '#fff', borderRadius: 10, boxShadow: '0 2px 10px rgba(0,0,0,0.05)', padding: 12, minHeight: 360 }}>
+      <div className="chat-main">
         {activeChat ? (
           <>
-            <div style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: 8, marginBottom: 8 }}>
-              <b>{activeChat.job?.title}</b>
-              <div style={{ fontSize: '14px', color: '#6b7280', marginTop: '4px' }}>
-                Chat with: {activeChat.participants?.find(p => p.username !== username)?.username || 'Unknown User'}
+            <div className="chat-header">
+              <div className="avatar">{(activeChat.participants?.find(p => p.username !== username)?.username || '?')[0]?.toUpperCase() || '?'}</div>
+              <div>
+                <div className="chat-title">{activeChat.participants?.find(p => p.username !== username)?.username || t('unknown_user')}</div>
+                <div className="chat-subtitle">{isTyping ? t('typing') : (activeChat.job?.title || '')}</div>
               </div>
             </div>
-            <div style={{ height: 280, overflowY: 'auto', paddingRight: 4 }}>
+            <div className="chat-body" ref={bodyRef}>
               {messages.map(m => (
-                <div key={m._id} style={{ margin: '8px 0', textAlign: m.sender?.username === username ? 'right' : 'left' }}>
-                  <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', textAlign: m.sender?.username === username ? 'right' : 'left' }}>
-                    {m.sender?.username}
-                  </div>
-                  <div style={{ display: 'inline-block', background: m.sender?.username === username ? '#e75480' : '#f3f4f6', color: m.sender?.username === username ? '#fff' : '#111827', padding: '8px 12px', borderRadius: 12 }}>
-                    {m.content}
-                  </div>
+                <div key={m._id} className={`msg ${m.sender?.username === username ? 'me' : 'them'}`}>
+                  {m.content}
+                  <span className="msg-time">{new Date(m.createdAt || Date.now()).toLocaleTimeString()}</span>
                 </div>
               ))}
             </div>
-            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-              <input className="input" value={text} onChange={e => setText(e.target.value)} placeholder="Type a message..." />
-              <button className="btn-primary" onClick={sendMessage}>Send</button>
+            <div className="chat-input">
+              <textarea
+                value={text}
+                onChange={e => setText(e.target.value)}
+                placeholder={t('type_message')}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+                }}
+                onInput={() => { if (activeChat) socket.emit('typing', { chatId: activeChat._id, username }); }}
+              />
+              <button className="send-btn" onClick={sendMessage}>{t('send')}</button>
             </div>
           </>
         ) : (
-          <div style={{ color: '#6b7280' }}>Select a chat to start messaging</div>
+          <div className="chat-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t('select_chat_to_start')}</div>
         )}
       </div>
     </div>
