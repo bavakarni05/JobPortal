@@ -13,7 +13,7 @@ const _fetch = (typeof fetch === 'function') ? fetch : (url, options) => (
   import('node-fetch').then(({ default: f }) => f(url, options))
 );
 // Import email service
-const { sendOTPEmail } = require('./emailService');
+const { sendOTPEmail } = require('./emailService_fixed');
 
 // Import models (for registration)
 require('./models/User');

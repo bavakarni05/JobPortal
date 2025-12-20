@@ -116,9 +116,16 @@ function JobSeekerDashboard({ onLogout }) {
         body: JSON.stringify(payload)
       });
       const data = await res.json();
-      console.log('Debug - response:', data);
-      if (res.ok && data.sent) setOtpSent(true);
-      else alert(data.error || 'Failed to send OTP');
+      console.log('Debug - response status:', res.status);
+      console.log('Debug - response ok:', res.ok);
+      console.log('Debug - response data:', data);
+      console.log('Debug - data.sent:', data.sent);
+      if (res.status === 200 && data && data.sent === true) {
+        setOtpSent(true);
+        alert('OTP sent successfully! Check your email.');
+      } else {
+        alert(`Error: ${data?.error || 'Failed to send OTP'}`);
+      }
     } catch (error) {
       console.error('Debug - network error:', error);
       alert('Network error');
@@ -410,7 +417,17 @@ function JobSeekerDashboard({ onLogout }) {
         </div>
       </div>
 
-      {/* Email verification banner temporarily removed for testing */}
+      {meLoading === false && !(me && me.profile && me.profile.emailVerified === true) && (
+        <div className="content-section" style={{ padding: 12, borderLeft: '4px solid #2563eb', background: '#eef2ff', marginTop: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontWeight: 600 }}>{t('verify_email_title') || 'Verify your email'}</div>
+              <div style={{ fontSize: 13, color: '#374151' }}>{t('verify_email_desc') || 'Verify your email to improve trust and messaging.'}</div>
+            </div>
+            <button className="btn-primary" onClick={() => { setShowVerifyModal(true); setVerifyEmail(me?.profile?.email || ''); }}>{t('verify_now') || 'Verify now'}</button>
+          </div>
+        </div>
+      )}
 
       {section === 'recommendations' && (
         <div className="content-section">
