@@ -21,7 +21,7 @@ const UserSchema = new mongoose.Schema({
     name: String,
     email: String,
     phone: String,
-  
+    preferredCategories: [String]
   }
 }, { timestamps: true });
 

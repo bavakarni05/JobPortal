@@ -12,8 +12,6 @@ const crypto = require('crypto');
 const _fetch = (typeof fetch === 'function') ? fetch : (url, options) => (
   import('node-fetch').then(({ default: f }) => f(url, options))
 );
-// Import email service
-const { sendOTPEmail } = require('./emailService_fixed');
 
 // Import models (for registration)
 require('./models/User');
@@ -31,12 +29,11 @@ const io = new Server(server, {
   cors: { origin: '*' }
 });
 
+const userSocketMap = new Map();
+
 // Middleware - moved to top to parse request bodies
 app.use(bodyParser.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// Simple in-memory OTP store for email verification (username -> { otp, expiresAt })
-const emailOtpStore = new Map();
 
 // Current user info
 app.get('/api/me', async (req, res) => {
@@ -49,51 +46,26 @@ app.get('/api/me', async (req, res) => {
   } catch (e) { res.status(500).json({ error: 'Server error' }); }
 });
 
-// Send email verification OTP (now sends real email)
-app.post('/api/verify/email/send', async (req, res) => {
-  console.log('Debug - req.body:', req.body);
-  const { username, email } = req.body || {};
-  console.log('Debug - extracted username:', username, 'email:', email);
-  if (!username || !email) return res.status(400).json({ error: 'username and email required' });
-  
-  const otp = String(Math.floor(100000 + Math.random() * 900000));
-  const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
-  emailOtpStore.set(username, { otp, expiresAt, email });
-  
+// Update user profile
+app.put('/api/profile', async (req, res) => {
+  const { username, profile } = req.body;
+  if (!username) return res.status(400).json({ error: 'Username required' });
   try {
-    const emailSent = await sendOTPEmail(email, otp, username);
-    if (emailSent) {
-      console.log(`[EMAIL] OTP sent successfully to ${email}`);
-      res.json({ sent: true });
-    } else {
-      console.log(`[EMAIL] Failed to send OTP to ${email}`);
-      res.status(500).json({ error: 'Failed to send email' });
+    const user = await User.findOne({ username });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    
+    if (profile) {
+      if (profile.name !== undefined) user.profile.name = profile.name;
+      if (profile.email !== undefined) user.profile.email = profile.email;
+      if (profile.phone !== undefined) user.profile.phone = profile.phone;
+      if (profile.preferredCategories !== undefined) user.profile.preferredCategories = profile.preferredCategories;
     }
-  } catch (error) {
-    console.error('Email service error:', error);
-    res.status(500).json({ error: 'Email service error' });
+    
+    await user.save();
+    res.json({ message: 'Profile updated', profile: user.profile });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
   }
-});
-
-// Confirm email OTP
-app.post('/api/verify/email/confirm', async (req, res) => {
-  console.log('Debug - confirm req.body:', req.body);
-  const { username, otp } = req.body || {};
-  console.log('Debug - confirm username:', username, 'otp:', otp);
-  const entry = emailOtpStore.get(username);
-  console.log('Debug - stored entry:', entry);
-  if (!entry) return res.status(400).json({ error: 'No OTP requested' });
-  if (Date.now() > entry.expiresAt) return res.status(400).json({ error: 'OTP expired' });
-  if (otp !== entry.otp) {
-    console.log('Debug - OTP mismatch: received', otp, 'expected', entry.otp);
-    return res.status(400).json({ error: 'Invalid OTP' });
-  }
-  try {
-    await User.updateOne({ username }, { $set: { 'profile.email': entry.email, 'profile.emailVerified': true } });
-    emailOtpStore.delete(username);
-    console.log('Debug - Email verified successfully for:', username);
-    res.json({ verified: true });
-  } catch (e) { res.status(500).json({ error: 'Server error' }); }
 });
 
 // Recommendations for a seeker
@@ -107,46 +79,58 @@ app.get('/api/recommendations', async (req, res) => {
     if (user.role !== 'jobseeker') return res.status(400).json({ error: 'User is not a jobseeker' });
     const seeker = user;
 
+    const preferred = Array.isArray(seeker?.profile?.preferredCategories) ? seeker.profile.preferredCategories : [];
+    console.log(`[RECOMMENDATION] User: ${username}, Preferred: ${JSON.stringify(preferred)}`);
+
+    const n = Math.max(5, Math.min(20, Number(limit) || 8));
+
+    // If user has preferred categories, ONLY show jobs from those categories.
+    if (preferred.length > 0) {
+      const jobQuery = { category: { $in: preferred.map(c => new RegExp(`^${c}$`, 'i')) } };
+      // Also exclude jobs they've already applied to
+      const apps = await Application.find({ applicant: seeker._id }, 'job');
+      const appliedJobIds = apps.map(a => a.job).filter(Boolean);
+      jobQuery._id = { $nin: appliedJobIds };
+
+      const jobs = await Job.find(jobQuery).populate('postedBy', 'username profile').sort({ createdAt: -1 }).limit(n); // Limit here as it's a direct recommendation
+      return res.json(jobs);
+    }
+
+    // --- Fallback logic if no preferred categories are set: recommend based on application history ---
     const apps = await Application.find({ applicant: seeker._id }).populate('job');
-    const preferred = Array.isArray(seeker?.profile?.preferredCategories)
-      ? seeker.profile.preferredCategories.map(c => String(c).toLowerCase())
-      : [];
+    const appliedJobIds = apps.map(a => a.job?._id).filter(Boolean);
+
     const likedSkills = new Map();
     const likedCategories = new Map();
     for (const a of apps) {
       const j = a.job || {};
-      if (Array.isArray(j.skills)) for (const s of j.skills) likedSkills.set(s, (likedSkills.get(s)||0)+1);
-      if (j.category) likedCategories.set(j.category.toLowerCase(), (likedCategories.get(j.category.toLowerCase())||0)+1);
+      if (Array.isArray(j.skills)) for (const s of j.skills) likedSkills.set(s, (likedSkills.get(s) || 0) + 1);
+      if (j.category) likedCategories.set(j.category.toLowerCase(), (likedCategories.get(j.category.toLowerCase()) || 0) + 1);
     }
 
-    const jobs = await Job.find({}).sort({ createdAt: -1 }).limit(200);
-    // Normalize categories for comparison
-    const norm = (v) => String(v || '').trim().toLowerCase();
-    const preferredSet = new Set(preferred.map(norm));
-    // If user has preferences, restrict pool to preferred categories first
-    let pool = jobs;
-    if (preferredSet.size > 0) {
-      const filtered = jobs.filter(j => j.category && preferredSet.has(norm(j.category)));
-      if (filtered.length > 0) pool = filtered;
+    // If no application history and no preferences, return empty list (do not show all jobs)
+    if (likedCategories.size === 0 && likedSkills.size === 0) {
+      return res.json([]);
     }
+
+    const orConditions = [];
+    if (likedCategories.size > 0) orConditions.push({ category: { $in: Array.from(likedCategories.keys()).map(c => new RegExp(`^${c}$`, 'i')) } });
+    if (likedSkills.size > 0) orConditions.push({ skills: { $in: Array.from(likedSkills.keys()) } });
+
+    // Find jobs that match liked categories or skills, excluding jobs already applied to.
+    const jobQuery = { _id: { $nin: appliedJobIds }, $or: orConditions };
+    const jobs = await Job.find(jobQuery).populate('postedBy', 'username profile').sort({ createdAt: -1 }).limit(200);
+
     const scoreJob = (j) => {
       let score = 0;
       if (Array.isArray(j.skills)) for (const s of j.skills) if (likedSkills.has(s)) score += 3 * likedSkills.get(s);
       if (j.category && likedCategories.has(j.category.toLowerCase())) score += 2 * likedCategories.get(j.category.toLowerCase());
-      if (j.category && preferred.includes(String(j.category).toLowerCase())) score += 5; // strong boost for user preference
       if (j.workMode === 'remote') score += 0.5; // gentle bias
       return score;
     };
-    let ranked = pool
+    const ranked = jobs
       .map(j => ({ job: j, score: scoreJob(j) }))
-      .sort((a,b) => b.score - a.score);
-    const n = Math.max(5, Math.min(20, Number(limit) || 8));
-    const allZero = ranked.length > 0 && ranked.every(r => (r.score || 0) === 0);
-
-    // If the pool is empty (no preferred-category jobs), or all scores are zero, fallback to latest jobs
-    if (ranked.length === 0 || allZero) {
-      return res.json(jobs.slice(0, n));
-    }
+      .sort((a, b) => b.score - a.score);
 
     res.json(ranked.slice(0, n).map(r => r.job));
   } catch (err) {
@@ -277,15 +261,34 @@ const Notification = require('./models/Notification');
 
 // Socket.IO events
 io.on('connection', (socket) => {
-  socket.on('join', (chatId) => {
+  socket.on('register', (username) => {
+    if (username) userSocketMap.set(username, socket.id);
+  });
+
+  socket.on('join', (data) => {
+    let chatId = data;
+    if (typeof data === 'object') {
+      chatId = data.chatId;
+      if (data.username) userSocketMap.set(data.username, socket.id);
+    }
     if (socket.currentRoom) socket.leave(socket.currentRoom);
     socket.join(chatId);
     socket.currentRoom = chatId;
   });
   socket.on('typing', ({ chatId, username }) => {
+    if (username) userSocketMap.set(username, socket.id);
     if (!chatId) return;
     // notify others in room
     socket.to(chatId).emit('typing', { chatId, username, at: Date.now() });
+  });
+  
+  socket.on('disconnect', () => {
+    for (const [user, id] of userSocketMap.entries()) {
+      if (id === socket.id) {
+        userSocketMap.delete(user);
+        break;
+      }
+    }
   });
 });
 
@@ -308,6 +311,7 @@ if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 // Signup route
 app.post('/api/signup', async (req, res) => {
   const { username, password, role, profile } = req.body;
+  console.log('[SIGNUP] Payload:', { username, role, profile });
   if (!username || !password || !role) {
     return res.status(400).json({ error: 'All fields are required' });
   }
@@ -332,7 +336,7 @@ app.post('/api/login', async (req, res) => {
     return res.status(400).json({ error: 'All fields are required' });
   }
   try {
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ username: new RegExp(`^${String(username).trim()}$`, 'i') });
     if (!user) {
       return res.status(400).json({ error: 'Invalid credentials' });
     }
@@ -340,7 +344,7 @@ app.post('/api/login', async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({ error: 'Invalid credentials' });
     }
-    res.json({ message: 'Login successful', role: user.role });
+    res.json({ message: 'Login successful', role: user.role, username: user.username });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
@@ -612,7 +616,7 @@ app.get('/api/chats', async (req, res) => {
   try {
     const user = await User.findOne({ username });
     if (!user) return res.status(400).json({ error: 'Invalid user' });
-    const chats = await Chat.find({ participants: user._id }).populate('job').populate('application').populate('participants', 'username');
+    const chats = await Chat.find({ participants: user._id }).populate('job').populate('application').populate('participants', 'username profile');
     res.json(chats);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -682,31 +686,109 @@ app.post('/api/chats/create', async (req, res) => {
 app.get('/api/chats/:chatId/messages', async (req, res) => {
   const { chatId } = req.params;
   try {
-    const messages = await Message.find({ chat: chatId }).populate('sender', 'username').sort({ createdAt: 1 });
+    const messages = await Message.find({ chat: chatId }).populate('sender', 'username profile').sort({ createdAt: 1 });
     res.json(messages);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-app.post('/api/chats/:chatId/messages', async (req, res) => {
+// Edit a message
+app.patch('/api/messages/:messageId', async (req, res) => {
+  const { messageId } = req.params;
+  const { username, content } = req.body;
+  if (!username || content === undefined) return res.status(400).json({ error: 'username and content are required' });
+
+  try {
+    const user = await User.findOne({ username });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const message = await Message.findById(messageId);
+    if (!message) return res.status(404).json({ error: 'Message not found' });
+
+    if (message.sender.toString() !== user._id.toString()) {
+      return res.status(403).json({ error: 'You can only edit your own messages' });
+    }
+
+    message.content = content;
+    message.edited = true;
+    await message.save();
+
+    const populated = await Message.findById(message._id).populate('sender', 'username profile');
+
+    io.to(message.chat.toString()).emit('messageEdited', populated);
+
+    res.json(populated);
+  } catch (err) {
+    console.error('Error editing message:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Delete a message
+app.delete('/api/messages/:messageId', async (req, res) => {
+  const { messageId } = req.params;
+  const { username } = req.body;
+  if (!username) return res.status(400).json({ error: 'username is required' });
+
+  try {
+    const user = await User.findOne({ username });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const message = await Message.findById(messageId);
+    if (!message) return res.status(404).json({ error: 'Message not found' });
+
+    if (message.sender.toString() !== user._id.toString()) {
+      return res.status(403).json({ error: 'You can only delete your own messages' });
+    }
+
+    // If the message was a file, delete it from the filesystem
+    if (message.fileUrl) {
+      const filePath = path.join(__dirname, message.fileUrl);
+      if (fs.existsSync(filePath)) {
+        fs.unlink(filePath, (err) => {
+          if (err) console.error(`Failed to delete file: ${filePath}`, err);
+        });
+      }
+    }
+
+    await Message.findByIdAndDelete(messageId);
+
+    io.to(message.chat.toString()).emit('messageDeleted', { messageId: message._id, chatId: message.chat });
+
+    res.json({ message: 'Message deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting message:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.post('/api/chats/:chatId/messages', upload.single('file'), async (req, res) => {
   const { chatId } = req.params;
   const { username, content } = req.body;
-  if (!username || !content) return res.status(400).json({ error: 'username and content required' });
+  if (!username || (!content && !req.file)) return res.status(400).json({ error: 'username and content or a file are required' });
   try {
     const user = await User.findOne({ username });
     if (!user) return res.status(400).json({ error: 'Invalid user' });
     // Block check
-    const chat = await Chat.findById(chatId).populate('participants', 'username').populate('job', 'title');
+    const chat = await Chat.findById(chatId).populate('participants', 'username profile').populate('job', 'title');
     if (!chat) return res.status(404).json({ error: 'Chat not found' });
+
     const other = chat.participants.find(p => p.username !== username);
     if (other) {
       const isBlocked = await Block.findOne({ $or: [ { blocker: username, blocked: other.username }, { blocker: other.username, blocked: username } ] });
       if (isBlocked) return res.status(403).json({ error: 'Messaging blocked between users' });
     }
 
-    const msg = await Message.create({ chat: chatId, sender: user._id, content });
-    const populated = await Message.findById(msg._id).populate('sender', 'username');
+    const messageData = { chat: chatId, sender: user._id, content: content || '' };
+    if (req.file) {
+      messageData.fileUrl = `/uploads/${req.file.filename}`;
+      messageData.fileName = req.file.originalname;
+      messageData.fileType = req.file.mimetype;
+    }
+
+    const msg = await Message.create(messageData);
+    const populated = await Message.findById(msg._id).populate('sender', 'username profile');
     await Chat.findByIdAndUpdate(chatId, { lastMessageAt: new Date() });
     
     // Create notification for the other participant
@@ -714,15 +796,22 @@ app.post('/api/chats/:chatId/messages', async (req, res) => {
     if (recipient) {
       await Notification.create({
         recipient: recipient.username,
-        message: `You have a new message from ${username} regarding: ${chat.job?.title || 'Job Application'}`,
+        message: `You have a new message from ${user.profile?.name || username} regarding: ${chat.job?.title || 'Job Application'}`,
         type: 'message',
         jobId: chat.job?._id
       });
     }
     
-    io.to(chatId).emit('newMessage', populated);
-    res.status(201).json(populated);
+    const senderSocketId = userSocketMap.get(username);
+    const senderSocket = senderSocketId ? io.sockets.sockets.get(senderSocketId) : null;
+    if (senderSocket) {
+      senderSocket.to(chatId).emit('newMessage', populated);
+    } else {
+      io.to(chatId).emit('newMessage', populated);
+    }
+    res.status(201).json({ message: 'Message sent', data: populated });
   } catch (err) {
+    console.error("Error sending message:", err);
     res.status(500).json({ error: 'Server error' });
   }
 });

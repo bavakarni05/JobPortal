@@ -152,6 +152,9 @@ export const translations = {
     send: 'Send',
     select_chat_to_start: 'Select a chat to start messaging',
     unknown_user: 'Unknown User',
+    typing: 'Typing...',
+    delete_message_confirm: 'Are you sure you want to delete this message?',
+    ask_ai: 'Ask AI Coach',
     // Selection
     applicant_selected: 'Applicant selected successfully!',
     failed_to_select_applicant: 'Failed to select applicant'
@@ -303,6 +306,9 @@ export const translations = {
     send: 'அனுப்பு',
     select_chat_to_start: 'செய்தியைத் தொடங்க அரட்டையைத் தேர்வு செய்யவும்',
     unknown_user: 'அறியப்படாத பயனர்',
+    typing: 'தட்டச்சு செய்கிறார்...',
+    delete_message_confirm: 'இந்த செய்தியை நிச்சயமாக நீக்க விரும்புகிறீர்களா?',
+    ask_ai: 'AI பயிற்சியாளரிடம் கேளுங்கள்',
     // Selection
     applicant_selected: 'விண்ணப்பதாரர் வெற்றிகரமாக தேர்ந்தெடுக்கப்பட்டார்!',
     failed_to_select_applicant: 'விண்ணப்பதாரரைத் தேர்ந்தெடுக்க முடியவில்லை'
@@ -426,6 +432,10 @@ export const translations = {
     send: 'भेजें',
     select_chat_to_start: 'संदेश भेजने के लिए चैट चुनें',
     unknown_user: 'अज्ञात उपयोगकर्ता',
+    typing: 'टाइप कर रहा है...',
+    delete_message_confirm: 'क्या आप वाकई इस संदेश को हटाना चाहते हैं?',
+    search_jobs: 'नौकरियां खोजें...',
+    ask_ai: 'AI कोच से पूछें',
     // Selection
     applicant_selected: 'आवेदक सफलतापूर्वक चयनित!',
     failed_to_select_applicant: 'आवेदक का चयन नहीं हो सका'
@@ -549,6 +559,10 @@ export const translations = {
     send: 'పంపండి',
     select_chat_to_start: 'సందేశం పంపడానికి చాట్ ఎంచుకోండి',
     unknown_user: 'తెలియని వినియోగదారు',
+    typing: 'టైప్ చేస్తున్నారు...',
+    delete_message_confirm: 'మీరు ఖచ్చితంగా ఈ సందేశాన్ని తొలగించాలనుకుంటున్నారా?',
+    search_jobs: 'ఉద్యోగాలను వెతకండి...',
+    ask_ai: 'AI కోచ్‌ని అడగండి',
     // Selection
     applicant_selected: 'దరఖాస్తుదారు విజయవంతంగా ఎంపికయ్యారు!',
     failed_to_select_applicant: 'దరఖాస్తుదారుని ఎంపిక చేయలేకపోయాం'

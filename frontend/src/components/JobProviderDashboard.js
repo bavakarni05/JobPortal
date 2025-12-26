@@ -23,21 +23,13 @@ function JobProviderDashboard({ onLogout }) {
   const { t, language } = useLanguage();
   const [translated, setTranslated] = useState({}); // jobId -> { title, description, company, location }
   const username = localStorage.getItem('username') || 'JobProvider';
-  // Debug: Check localStorage content
-  console.log('localStorage username:', localStorage.getItem('username'));
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [me, setMe] = useState({});
-  const [showVerifyModal, setShowVerifyModal] = useState(false);
-  const [verifyEmail, setVerifyEmail] = useState('');
-  const [otp, setOtp] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
 
   useEffect(() => {
     if (section === 'view') fetchJobs();
     fetchNotifications();
-    fetchMe();
     // eslint-disable-next-line
   }, [section]);
 
@@ -73,85 +65,6 @@ function JobProviderDashboard({ onLogout }) {
         setUnreadCount(unread);
       }
     } catch {}
-  };
-
-  const fetchMe = async () => {
-    try {
-      const res = await fetch(`/api/me?username=${username}`);
-      const data = await res.json();
-      console.log('Debug - fetchMe response:', data);
-      if (res.ok) {
-        setMe(data || {});
-        return data;
-      }
-      return null;
-    } catch (error) {
-      console.error('Debug - fetchMe error:', error);
-      return null;
-    }
-  };
-
-  // Email verification flow
-  const sendEmailOtp = async () => {
-    if (!verifyEmail) {
-      alert('Please enter an email address');
-      return;
-    }
-    if (!username || username === 'JobProvider' || username === 'JobSeeker') {
-      alert('User session not found. Please login again.');
-      return;
-    }
-    try {
-      const payload = { username: username.trim(), email: verifyEmail.trim() };
-      const res = await fetch('/api/verify/email/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (res.ok && data.sent) {
-        setOtpSent(true);
-        alert('OTP sent successfully! Check console for OTP.');
-      } else {
-        alert(`Error: ${data.error || 'Failed to send OTP'}`);
-      }
-    } catch (error) {
-      alert('Network error: ' + error.message);
-    }
-  };
-
-  const confirmEmailOtp = async () => {
-    if (!otp) {
-      alert('Please enter the OTP');
-      return;
-    }
-    if (!username || username === 'JobProvider') {
-      alert('User session not found. Please login again.');
-      return;
-    }
-    try {
-      const res = await fetch('/api/verify/email/confirm', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, otp })
-      });
-      const data = await res.json();
-      if (res.ok && data.verified) {
-        console.log('Debug - OTP confirmed, calling fetchMe');
-        setShowVerifyModal(false);
-        setOtp('');
-        setOtpSent(false);
-        const meData = await fetchMe();
-        console.log('Debug - meData after fetchMe:', meData);
-        // Force page refresh to update banner
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
-        alert('Email verified successfully! Page will refresh.');
-      } else alert(data.error || 'Invalid OTP');
-    } catch {
-      alert('Network error');
-    }
   };
 
   // Re-translate when language changes while viewing jobs
@@ -397,46 +310,6 @@ function JobProviderDashboard({ onLogout }) {
           </div>
         </div>
       </div>
-
-      {!(me && me.profile && me.profile.emailVerified === true) && (
-        <div className="content-section" style={{ padding: 12, borderLeft: '4px solid #2563eb', background: '#eef2ff', marginTop: 12 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <div style={{ fontWeight: 600 }}>{t('verify_email_title') || 'Verify your email'}</div>
-              <div style={{ fontSize: 13, color: '#374151' }}>{t('verify_email_desc') || 'Verify your email to improve trust and messaging.'}</div>
-            </div>
-            <button className="btn-primary" onClick={() => { setShowVerifyModal(true); setVerifyEmail(me?.profile?.email || ''); }}>{t('verify_now') || 'Verify now'}</button>
-          </div>
-        </div>
-      )}
-
-      {showVerifyModal && (
-        <div className="modal-overlay" onClick={() => setShowVerifyModal(false)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <h3>{t('verify_email') || 'Verify Email'}</h3>
-            <div className="form-grid">
-              <div className="full">
-                <label className="label">{t('email')}</label>
-                <input className="input" type="email" value={verifyEmail} onChange={e => setVerifyEmail(e.target.value)} placeholder="you@example.com" />
-              </div>
-              {otpSent && (
-                <div className="full">
-                  <label className="label">{t('otp')}</label>
-                  <input className="input" value={otp} onChange={e => setOtp(e.target.value)} placeholder="6-digit OTP" />
-                </div>
-              )}
-            </div>
-            <div className="modal-actions" style={{ display: 'flex', gap: 12 }}>
-              {!otpSent ? (
-                <button className="btn-primary" onClick={sendEmailOtp}>{t('send_otp') || 'Send OTP'}</button>
-              ) : (
-                <button className="btn-primary" onClick={confirmEmailOtp}>{t('confirm') || 'Confirm'}</button>
-              )}
-              <button className="btn-secondary" onClick={() => setShowVerifyModal(false)}>{t('cancel') || 'Cancel'}</button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {section === 'home' && (
         <div style={{ width: '100%', margin: 0 }}>

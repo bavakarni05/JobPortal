@@ -51,7 +51,7 @@ function AuthPage({ onLogin }) {
       setError(data.error || 'Login failed');
     } else {
       // Save username for dashboard use
-      localStorage.setItem('username', username);
+      localStorage.setItem('username', data.username);
       onLogin(data.role);
     }
   };

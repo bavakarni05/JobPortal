@@ -5,7 +5,7 @@ import { useLanguage } from '../LanguageContext';
 import womenImage from '../women1.jpg';
 
 function JobSeekerDashboard({ onLogout }) {
-  const [section, setSection] = useState('home'); // home | view | applications | chats | recommendations
+  const [section, setSection] = useState('home'); // home | view | applications | chats | recommendations | profile
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [jobs, setJobs] = useState([]);
   const [allJobs, setAllJobs] = useState([]);
@@ -18,7 +18,7 @@ function JobSeekerDashboard({ onLogout }) {
   const [expandedJob, setExpandedJob] = useState(null);
   const [showApply, setShowApply] = useState(false);
   const [applyForJob, setApplyForJob] = useState(null);
-  const [applyForm, setApplyForm] = useState({ applicantName: '', age: '', address: '', email: '' });
+  const [applyForm, setApplyForm] = useState({ applicantName: '', age: '', address: '', email: '', contactNo: '' });
   const [resume, setResume] = useState(null);
   const [translatedTitles, setTranslatedTitles] = useState({});
   const [showAppDetailsModal, setShowAppDetailsModal] = useState(false);
@@ -28,12 +28,8 @@ function JobSeekerDashboard({ onLogout }) {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [me, setMe] = useState({});
-  const [meLoading, setMeLoading] = useState(true);
-  const [showVerifyModal, setShowVerifyModal] = useState(false);
-  const [verifyEmail, setVerifyEmail] = useState('');
-  const [otp, setOtp] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
+  const [profileForm, setProfileForm] = useState({ name: '', email: '', phone: '', preferredCategories: [] });
+  const [profileLoading, setProfileLoading] = useState(false);
 
   const username = localStorage.getItem('username') || 'JobSeeker';
   const navigate = useNavigate();
@@ -43,16 +39,31 @@ function JobSeekerDashboard({ onLogout }) {
     if (section === 'view') fetchJobs();
     if (section === 'applications') fetchApplications();
     if (section === 'recommendations') fetchRecommendations();
+    if (section === 'profile') fetchProfile();
     fetchNotifications();
-    fetchMe();
     // eslint-disable-next-line
   }, [section]);
 
-  // Separate useEffect to ensure fetchMe is called on mount
   useEffect(() => {
-    fetchMe();
     // eslint-disable-next-line
   }, []);
+
+  const fetchProfile = async () => {
+    setProfileLoading(true);
+    try {
+      const res = await fetch(`/api/me?username=${username}`);
+      const data = await res.json();
+      if (res.ok && data.profile) {
+        setProfileForm({
+          name: data.profile.name || '',
+          email: data.profile.email || '',
+          phone: data.profile.phone || '',
+          preferredCategories: data.profile.preferredCategories || []
+        });
+      }
+    } catch (e) { console.error(e); }
+    setProfileLoading(false);
+  };
 
   const fetchNotifications = async () => {
     try {
@@ -68,104 +79,12 @@ function JobSeekerDashboard({ onLogout }) {
     }
   };
 
-  const fetchMe = async () => {
-    try {
-      setMeLoading(true);
-      const res = await fetch(`/api/me?username=${username}`);
-      const data = await res.json();
-      console.log('Debug - fetchMe response:', data);
-      if (res.ok) {
-        setMe(data || {});
-        return data;
-      }
-      return null;
-    } catch (error) {
-      console.error('Debug - fetchMe error:', error);
-      return null;
-    } finally {
-      setMeLoading(false);
-    }
-  };
-
   const fetchRecommendations = async () => {
     try {
       const res = await fetch(`/api/recommendations?username=${username}`);
       const data = await res.json();
       if (res.ok && Array.isArray(data)) setRecommended(data);
     } catch {}
-  };
-
-  // Email verification flow
-  const sendEmailOtp = async () => {
-    if (!verifyEmail) {
-      alert('Please enter an email address');
-      return;
-    }
-    console.log('Debug - username:', username);
-    console.log('Debug - verifyEmail:', verifyEmail);
-    if (!username || username === 'JobProvider' || username === 'JobSeeker') {
-      alert('User session not found. Please login again.');
-      return;
-    }
-    try {
-      const payload = { username, email: verifyEmail };
-      console.log('Debug - sending payload:', payload);
-      const res = await fetch('/api/verify/email/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      console.log('Debug - response status:', res.status);
-      console.log('Debug - response ok:', res.ok);
-      console.log('Debug - response data:', data);
-      console.log('Debug - data.sent:', data.sent);
-      if (res.status === 200 && data && data.sent === true) {
-        setOtpSent(true);
-        alert('OTP sent successfully! Check your email.');
-      } else {
-        alert(`Error: ${data?.error || 'Failed to send OTP'}`);
-      }
-    } catch (error) {
-      console.error('Debug - network error:', error);
-      alert('Network error');
-    }
-  };
-
-  const confirmEmailOtp = async () => {
-    if (!otp) {
-      alert('Please enter the OTP');
-      return;
-    }
-    if (!username || username === 'JobSeeker') {
-      alert('User session not found. Please login again.');
-      return;
-    }
-    try {
-      const res = await fetch('/api/verify/email/confirm', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, otp })
-      });
-      const data = await res.json();
-      if (res.ok && data.verified) {
-        console.log('Debug - OTP confirmed, calling fetchMe');
-        setShowVerifyModal(false);
-        setOtp('');
-        setOtpSent(false);
-        const meData = await fetchMe();
-        console.log('Debug - meData after fetchMe:', meData);
-        console.log('Debug - meData.profile.emailVerified:', meData?.profile?.emailVerified);
-        // Force page refresh to update banner
-        setTimeout(() => {
-          console.log('Debug - About to refresh page');
-          window.location.reload();
-        }, 1000);
-        alert('Email verified successfully! Page will refresh.');
-      } else alert(data.error || 'Invalid OTP');
-    } catch {
-      alert('Network error');
-    }
   };
 
   useEffect(() => {
@@ -330,6 +249,7 @@ function JobSeekerDashboard({ onLogout }) {
       formData.append('applicantName', applyForm.applicantName);
       formData.append('age', applyForm.age);
       formData.append('address', applyForm.address);
+      formData.append('contactNo', applyForm.contactNo);
       formData.append('email', applyForm.email);
       if (resume) formData.append('resume', resume);
 
@@ -340,7 +260,7 @@ function JobSeekerDashboard({ onLogout }) {
         setAppliedJobIds(ids => [...ids, applyForJob._id]);
         setShowApply(false);
         setApplyForJob(null);
-        setApplyForm({ applicantName: '', age: '', address: '', email: '' });
+        setApplyForm({ applicantName: '', age: '', address: '', email: '', contactNo: '' });
         setResume(null);
       } else setError(data.error || t('failed_to_post_application'));
     } catch {
@@ -351,6 +271,23 @@ function JobSeekerDashboard({ onLogout }) {
   const handleApplicationClick = (application) => {
     setSelectedApplication(application);
     setShowAppDetailsModal(true);
+  };
+
+  const handleProfileUpdate = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, profile: profileForm })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(t('profile_updated') || 'Profile updated successfully');
+      } else {
+        alert(data.error || 'Failed to update profile');
+      }
+    } catch (e) { alert('Network error'); }
   };
 
   return (
@@ -410,6 +347,7 @@ function JobSeekerDashboard({ onLogout }) {
             {showProfileMenu && (
               <div className="profile-menu">
                 <div className="profile-menu-header">{username}</div>
+                <button onClick={() => { setSection('profile'); setShowProfileMenu(false); }}>{t('profile') || 'Profile'}</button>
                 <button onClick={onLogout}>{t('logout')}</button>
               </div>
             )}
@@ -417,15 +355,48 @@ function JobSeekerDashboard({ onLogout }) {
         </div>
       </div>
 
-      {meLoading === false && !(me && me.profile && me.profile.emailVerified === true) && (
-        <div className="content-section" style={{ padding: 12, borderLeft: '4px solid #2563eb', background: '#eef2ff', marginTop: 12 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <div style={{ fontWeight: 600 }}>{t('verify_email_title') || 'Verify your email'}</div>
-              <div style={{ fontSize: 13, color: '#374151' }}>{t('verify_email_desc') || 'Verify your email to improve trust and messaging.'}</div>
-            </div>
-            <button className="btn-primary" onClick={() => { setShowVerifyModal(true); setVerifyEmail(me?.profile?.email || ''); }}>{t('verify_now') || 'Verify now'}</button>
-          </div>
+      {section === 'profile' && (
+        <div className="content-section">
+          <h3>{t('edit_profile') || 'Edit Profile'}</h3>
+          {profileLoading ? <div className="loading">{t('loading')}</div> : (
+            <form onSubmit={handleProfileUpdate} style={{ maxWidth: 600, margin: '0 auto' }}>
+              <div className="form-grid">
+                <div className="full">
+                  <label className="label">{t('full_name')}</label>
+                  <input className="input" value={profileForm.name} onChange={e => setProfileForm({ ...profileForm, name: e.target.value })} placeholder="Your Name" />
+                </div>
+                <div className="full">
+                  <label className="label">{t('email')}</label>
+                  <input className="input" value={profileForm.email} onChange={e => setProfileForm({ ...profileForm, email: e.target.value })} placeholder="email@example.com" />
+                </div>
+                <div className="full">
+                  <label className="label">{t('phone') || 'Phone'}</label>
+                  <input className="input" value={profileForm.phone} onChange={e => setProfileForm({ ...profileForm, phone: e.target.value })} placeholder="Phone Number" />
+                </div>
+                <div className="full">
+                  <label className="label">{t('preferred_categories') || 'Preferred Job Categories'}</label>
+                  <select
+                    className="select"
+                    multiple
+                    value={profileForm.preferredCategories}
+                    onChange={(e) => {
+                      const opts = Array.from(e.target.selectedOptions).map(o => o.value);
+                      setProfileForm({ ...profileForm, preferredCategories: opts });
+                    }}
+                    style={{ height: 120 }}
+                  >
+                    {['Education', 'Healthcare', 'IT', 'Retail', 'Housekeeping', 'Caregiving', 'Administration', 'Sales', 'Food Service'].map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>{t('hold_ctrl_to_select_multiple') || 'Hold Ctrl/Cmd to select multiple'}</div>
+                </div>
+              </div>
+              <div style={{ marginTop: 20, textAlign: 'right' }}>
+                <button type="submit" className="btn-primary">{t('save_changes') || 'Save Changes'}</button>
+              </div>
+            </form>
+          )}
         </div>
       )}
 
@@ -435,7 +406,7 @@ function JobSeekerDashboard({ onLogout }) {
           <div style={{ maxWidth: 900, margin: '16px auto' }}>
             {recommended.length === 0 ? (
               <div className="loading" style={{ textAlign: 'center' }}>
-                {t('no_recommendations_yet') || 'No recommendations yet. Try applying or refresh.'}
+                {t('no_recommendations_yet') || 'No recommendations found matching your categories or history.'}
                 <div style={{ marginTop: 10 }}>
                   <button className="btn-secondary" onClick={fetchRecommendations}>{t('refresh') || 'Refresh'}</button>
                 </div>
@@ -457,34 +428,6 @@ function JobSeekerDashboard({ onLogout }) {
                 </div>
               </div>
             )}
-          </div>
-        </div>
-      )}
-
-      {showVerifyModal && (
-        <div className="modal-overlay" onClick={() => setShowVerifyModal(false)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <h3>{t('verify_email') || 'Verify Email'}</h3>
-            <div className="form-grid">
-              <div className="full">
-                <label className="label">{t('email')}</label>
-                <input className="input" type="email" value={verifyEmail} onChange={e => setVerifyEmail(e.target.value)} placeholder="you@example.com" />
-              </div>
-              {otpSent && (
-                <div className="full">
-                  <label className="label">{t('otp')}</label>
-                  <input className="input" value={otp} onChange={e => setOtp(e.target.value)} placeholder="6-digit OTP" />
-                </div>
-              )}
-            </div>
-            <div className="modal-actions" style={{ display: 'flex', gap: 12 }}>
-              {!otpSent ? (
-                <button className="btn-primary" onClick={sendEmailOtp}>{t('send_otp') || 'Send OTP'}</button>
-              ) : (
-                <button className="btn-primary" onClick={confirmEmailOtp}>{t('confirm') || 'Confirm'}</button>
-              )}
-              <button className="btn-secondary" onClick={() => setShowVerifyModal(false)}>{t('cancel') || 'Cancel'}</button>
-            </div>
           </div>
         </div>
       )}
@@ -601,6 +544,10 @@ function JobSeekerDashboard({ onLogout }) {
                 <div>
                   <label className="label">{t('age')}</label>
                   <input className="input" type="number" value={applyForm.age} onChange={e => setApplyForm({ ...applyForm, age: e.target.value })} required />
+                </div>
+                <div>
+                  <label className="label">{t('contact_no') || 'Contact No'}</label>
+                  <input className="input" value={applyForm.contactNo} onChange={e => setApplyForm({ ...applyForm, contactNo: e.target.value })} required />
                 </div>
                 <div className="full">
                   <label className="label">{t('address')}</label>
