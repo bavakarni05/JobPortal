@@ -23,6 +23,11 @@ require('./models/Saved');
 const Block = require('./models/Block');
 const Report = require('./models/Report');
 
+const chatRoutes = require('./routes/chatRoutes');
+
+
+
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -34,6 +39,7 @@ const userSocketMap = new Map();
 // Middleware - moved to top to parse request bodies
 app.use(bodyParser.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/api/chats', chatRoutes);
 
 // Current user info
 app.get('/api/me', async (req, res) => {
