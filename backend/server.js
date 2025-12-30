@@ -250,7 +250,7 @@ app.post('/api/translate', async (req, res) => {
 });
 
 // MongoDB connection
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/women-employment';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/women-employment';
 
 mongoose.connect(MONGO_URI)
   .then(() => console.log('MongoDB connected'))

@@ -3,7 +3,7 @@ import { io } from 'socket.io-client';
 import { useLanguage } from '../LanguageContext';
 
 
-const socket = io();
+const socket = io('http://localhost:5000');
 
 function Chats({ initialChatId }) {
   const { t } = useLanguage();
