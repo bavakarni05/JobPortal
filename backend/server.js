@@ -252,6 +252,8 @@ app.post('/api/translate', async (req, res) => {
 // MongoDB connection
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/women-employment';
 
+console.log('Attempting MongoDB connection to:', MONGO_URI);
+mongoose.set('strictQuery', false);
 mongoose.connect(MONGO_URI)
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.error('MongoDB connection error:', err));

@@ -118,32 +118,6 @@ function Chats({ initialChatId }) {
     }
   };
 
-  const startAIChat = async () => {
-    if (!username) return;
-    const aiBotName = "AI_Coach";
-    let chat = chats.find(c => c.participants?.some(p => p.username === aiBotName));
-    
-    if (!chat) {
-      try {
-        // Create a new chat with the AI Bot
-        const res = await fetch('/api/chats', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, recipient: aiBotName })
-        });
-        if (res.ok) {
-          chat = await res.json();
-          setChats(prev => [chat, ...prev]);
-        } else {
-          alert("Failed to start AI chat. Please check backend configuration.");
-        }
-      } catch (err) {
-        console.error("Error creating AI chat", err);
-      }
-    }
-    if (chat) openChat(chat);
-  };
-
   const handleEditClick = (msg) => {
     setEditingMessageId(msg._id);
     setEditContent(msg.content || '');
@@ -193,11 +167,6 @@ function Chats({ initialChatId }) {
       <div className="chat-sidebar" style={{ width: '300px', borderRight: '1px solid #ddd', display: 'flex', flexDirection: 'column', backgroundColor: '#fff' }}>
         <div className="chat-search" style={{ padding: '10px', borderBottom: '1px solid #eee' }}>
           <input placeholder={t('search_jobs')} value={search} onChange={e => setSearch(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: '20px', border: '1px solid #ccc', outline: 'none', boxSizing: 'border-box' }} />
-        </div>
-        <div style={{ padding: '10px', borderBottom: '1px solid #eee' }}>
-          <button type="button" onClick={startAIChat} style={{ width: '100%', padding: '10px', borderRadius: '20px', border: 'none', background: 'linear-gradient(90deg, #6a11cb 0%, #2575fc 100%)', color: 'white', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 5px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-            <span>✨</span> {t('ask_ai')}
-          </button>
         </div>
         <ul className="chat-list" style={{ listStyle: 'none', padding: 0, margin: 0, overflowY: 'auto', flex: 1 }}>
           {filtered.map(c => {

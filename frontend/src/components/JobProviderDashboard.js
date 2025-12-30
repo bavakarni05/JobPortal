@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import Chats from './Chats';
 import { useLanguage } from '../LanguageContext';
 import womenImage from '../women1.jpg';
+import InterviewScheduler from './InterviewScheduler';
+import InterviewList from './InterviewList';
 
 function JobProviderDashboard({ onLogout }) {
   const [jobs, setJobs] = useState([]);
@@ -13,12 +15,13 @@ function JobProviderDashboard({ onLogout }) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-  const [section, setSection] = useState('home'); // home | add | view | chats
+  const [section, setSection] = useState('home'); // home | add | view | chats | interviews
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [query, setQuery] = useState('');
   const [showAppModal, setShowAppModal] = useState(false);
   const [activeApp, setActiveApp] = useState(null);
   const [initialChatId, setInitialChatId] = useState(null);
+  const [schedulingApp, setSchedulingApp] = useState(null);
 
   const { t, language } = useLanguage();
   const [translated, setTranslated] = useState({}); // jobId -> { title, description, company, location }
@@ -259,6 +262,7 @@ function JobProviderDashboard({ onLogout }) {
           <button className={section === 'add' ? 'active' : ''} onClick={() => setSection('add')}>{t('add_job')}</button>
           <button className={section === 'view' ? 'active' : ''} onClick={() => setSection('view')}>{t('my_jobs')}</button>
           <button className={section === 'chats' ? 'active' : ''} onClick={() => setSection('chats')}>{t('chats')}</button>
+          <button className={section === 'interviews' ? 'active' : ''} onClick={() => setSection('interviews')}>{t('interviews') || 'Interviews'}</button>
         </div>
         <div className="header-right">
           <div
@@ -375,7 +379,7 @@ function JobProviderDashboard({ onLogout }) {
                 <label className="label">{t('category')}</label>
                 <select className="input" name="category" value={optional.category} onChange={handleOptionalChange}>
                   <option value="">{t('select') || 'Select'}</option>
-                  {['Education','Healthcare','IT','Retail','Housekeeping','Caregiving','Administration','Sales','Food Service'].map(cat => (
+                  {['Skilled', 'Semi-skilled', 'Non-skilled'].map(cat => (
                     <option key={cat} value={cat}>{cat}</option>
                   ))}
                 </select>
@@ -465,6 +469,7 @@ function JobProviderDashboard({ onLogout }) {
                                 {(app.status === 'pending' || app.status === 'applied') && (
                                   <button className="btn-primary" onClick={() => handleSelect(app._id)}>{t('select')}</button>
                                 )}
+                                <button className="btn-primary" onClick={() => setSchedulingApp(app)}>{t('schedule_interview') || 'Schedule Interview'}</button>
                                 <button className="btn-secondary" onClick={() => handleMessage(app._id)}>{t('message')}</button>
                               </div>
                             </div>
@@ -484,6 +489,12 @@ function JobProviderDashboard({ onLogout }) {
 
       {section === 'chats' && (
         <Chats initialChatId={initialChatId} />
+      )}
+
+      {section === 'interviews' && (
+        <div className="content-section">
+          <InterviewList />
+        </div>
       )}
 
       {showAppModal && activeApp && (
@@ -508,6 +519,19 @@ function JobProviderDashboard({ onLogout }) {
             </div>
           </div>
         </div>
+      )}
+
+      {schedulingApp && (
+        <InterviewScheduler
+          applicationId={schedulingApp._id}
+          jobId={schedulingApp.job?._id}
+          applicantUsername={schedulingApp.applicant?.username}
+          onClose={() => setSchedulingApp(null)}
+          onScheduled={() => {
+            setSchedulingApp(null);
+            // Optionally refresh data
+          }}
+        />
       )}
     </div>
   );

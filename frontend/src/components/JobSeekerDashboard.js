@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import Chats from './Chats';
 import { useLanguage } from '../LanguageContext';
 import womenImage from '../women1.jpg';
+import InterviewList from './InterviewList';
 
 function JobSeekerDashboard({ onLogout }) {
-  const [section, setSection] = useState('home'); // home | view | applications | chats | recommendations | profile
+  const [section, setSection] = useState('home'); // home | view | applications | chats | recommendations | profile | interviews
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [jobs, setJobs] = useState([]);
   const [allJobs, setAllJobs] = useState([]);
@@ -300,6 +301,7 @@ function JobSeekerDashboard({ onLogout }) {
           <button className={section === 'applications' ? 'active' : ''} onClick={() => setSection('applications')}>{t('my_applications')}</button>
           <button className={section === 'recommendations' ? 'active' : ''} onClick={() => setSection('recommendations')}>{t('recommendations') || 'Recommendations'}</button>
           <button className={section === 'chats' ? 'active' : ''} onClick={() => setSection('chats')}>{t('chats')}</button>
+          <button className={section === 'interviews' ? 'active' : ''} onClick={() => setSection('interviews')}>{t('interviews') || 'Interviews'}</button>
         </div>
         <div className="header-right">
           <div
@@ -385,7 +387,7 @@ function JobSeekerDashboard({ onLogout }) {
                     }}
                     style={{ height: 120 }}
                   >
-                    {['Education', 'Healthcare', 'IT', 'Retail', 'Housekeeping', 'Caregiving', 'Administration', 'Sales', 'Food Service'].map(cat => (
+                    {['Skilled', 'Semi-skilled', 'Non-skilled'].map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
                     ))}
                   </select>
@@ -524,6 +526,12 @@ function JobSeekerDashboard({ onLogout }) {
 
       {section === 'chats' && (
         <Chats initialChatId={initialChatId} />
+      )}
+
+      {section === 'interviews' && (
+        <div className="content-section">
+          <InterviewList />
+        </div>
       )}
 
       {showApply && (
