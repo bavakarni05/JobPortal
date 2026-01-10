@@ -31,6 +31,13 @@ function JobSeekerDashboard({ onLogout }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [profileForm, setProfileForm] = useState({ name: '', email: '', phone: '', preferredCategories: [] });
   const [profileLoading, setProfileLoading] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const username = localStorage.getItem('username') || 'JobSeeker';
   const navigate = useNavigate();
@@ -309,7 +316,7 @@ function JobSeekerDashboard({ onLogout }) {
     <div className="dashboard-container">
       <div className="header-bar">
         <div className="header-title">{t('app_title')}</div>
-        <div className="header-nav" style={{ overflowX: 'auto', whiteSpace: 'nowrap' }}>
+        <div className="header-nav" style={{ overflowX: 'auto', whiteSpace: 'nowrap', display: 'flex', justifyContent: isMobile ? 'flex-start' : 'center', flex: 1 }}>
           <button className={section === 'home' ? 'active' : ''} onClick={() => setSection('home')}>{t('home')}</button>
           <button className={section === 'view' ? 'active' : ''} onClick={() => setSection('view')}>{t('view_jobs')}</button>
           <button className={section === 'applications' ? 'active' : ''} onClick={() => setSection('applications')}>{t('my_applications')}</button>
