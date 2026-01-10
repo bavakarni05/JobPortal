@@ -43,9 +43,15 @@ function CompanyReview({ companyName }) {
     }
   };
 
+  const averageRating = reviews.length > 0 ? Math.round(reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length) : 0;
+
   return (
     <div className="review-section" style={{ marginTop: 24, padding: 16, background: '#fff', borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', textAlign: 'left' }}>
-      <h3 style={{ marginBottom: 16 }}>{t('company_reviews') || 'Company Reviews'} - {companyName}</h3>
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+        <h3 style={{ margin: 0, marginRight: 12 }}>{t('reviews') || 'Reviews'}</h3>
+        <span style={{ color: '#f39c12', fontSize: '1.2rem' }}>{'★'.repeat(averageRating)}</span>
+        <span style={{ color: '#ddd', fontSize: '1.2rem' }}>{'★'.repeat(5 - averageRating)}</span>
+      </div>
       <div className="reviews-list" style={{ marginBottom: 20 }}>
         {reviews.length === 0 ? <p style={{ color: '#666' }}>{t('no_reviews_yet') || 'No reviews yet. Be the first!'}</p> : reviews.map((r, i) => (
           <div key={i} className="review-card" style={{ borderBottom: '1px solid #eee', padding: '12px 0' }}>

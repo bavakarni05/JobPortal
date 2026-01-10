@@ -157,7 +157,14 @@ export const translations = {
     ask_ai: 'Ask AI Coach',
     // Selection
     applicant_selected: 'Applicant selected successfully!',
-    failed_to_select_applicant: 'Failed to select applicant'
+    failed_to_select_applicant: 'Failed to select applicant',
+    recommended_for_you:'Recommended for you',
+    scheduled_interviews:'Scheduled interviews',
+    reviews:'Reviews',
+    write_review:'Give your reviews',
+    submit_review:'Submit',
+    preferred_categories:'Preferred Category',
+    schedule_interview:'Schedule interview'
   },
   ta: {
     app_title: 'பெண்கள் வேலை வாய்ப்பு தளம்',

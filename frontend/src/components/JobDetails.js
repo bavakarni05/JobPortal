@@ -16,8 +16,7 @@ function JobDetails() {
   const [showApply, setShowApply] = useState(false);
   const [applyForm, setApplyForm] = useState({ applicantName: '', age: '', address: '', contactNo: '' });
   const [resume, setResume] = useState(null);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const { t, locale, language } = useLanguage();
+  const { t, language } = useLanguage();
   const [translated, setTranslated] = useState(null);
   const username = localStorage.getItem('username');
 
@@ -34,12 +33,6 @@ function JobDetails() {
     }
     // eslint-disable-next-line
   }, [jobId]);
-
-  useEffect(() => {
-    return () => {
-      try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch {}
-    };
-  }, []);
 
   // Re-translate when language changes or job loads
   useEffect(() => {
@@ -121,30 +114,6 @@ function JobDetails() {
     }
   };
 
-  const speakText = () => {
-    if (!job) return;
-    if (!('speechSynthesis' in window)) {
-      alert('Speech synthesis not supported in this browser');
-      return;
-    }
-    const title = translated?.title || job.title;
-    const company = translated?.company || job.company;
-    const location = translated?.location || job.location;
-    const description = translated?.description || job.description;
-    const text = `${title}. ${company}. ${location}. ${description}`;
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = locale;
-    utterance.onend = () => setIsSpeaking(false);
-    try { window.speechSynthesis.cancel(); } catch {}
-    window.speechSynthesis.speak(utterance);
-    setIsSpeaking(true);
-  };
-
-  const stopSpeech = () => {
-    try { window.speechSynthesis.cancel(); } catch {}
-    setIsSpeaking(false);
-  };
-
   if (loading) return <div className="dashboard-container">{t('loading')}</div>;
   if (error) return <div className="dashboard-container" style={{ color: 'red' }}>{error}</div>;
   if (!job) return <div className="dashboard-container">{t('job_not_found')}</div>;
@@ -178,11 +147,6 @@ function JobDetails() {
             <span className="meta-label">{t('perks')}:</span><span className="meta-value">{job.perks.join(', ')}</span>
           </div>
         )}
-        <div className="action-row">
-          <button onClick={isSpeaking ? stopSpeech : speakText} style={{ marginTop: 8 }}>
-            {isSpeaking ? t('stop') : t('listen')}
-          </button>
-        </div>
         <div className="muted">{t('posted_by')} {job.postedBy?.username || 'Unknown'}</div>
         {!applied && username && (
           <button onClick={openApply} className="btn-primary" style={{ marginTop: 12 }}>{t('apply')}</button>
