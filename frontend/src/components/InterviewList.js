@@ -47,9 +47,13 @@ function InterviewList() {
               </div>
               {int.link && (
                 <div style={{ marginTop: 12 }}>
-                  <a href={int.link.startsWith('http') ? int.link : `https://${int.link}`} target="_blank" rel="noreferrer" className="btn-primary" style={{ textDecoration: 'none', display: 'inline-block' }}>
-                    {int.type === 'video' ? (t('join_meeting') || 'Join Meeting') : (t('view_location') || 'View Location')}
-                  </a>
+                  {int.type === 'video' ? (
+                    <a href={int.link.startsWith('http') ? int.link : `https://${int.link}`} target="_blank" rel="noreferrer" className="btn-primary" style={{ textDecoration: 'none', display: 'inline-block' }}>
+                      {t('join_meeting') || 'Join Meeting'}
+                    </a>
+                  ) : (
+                    <span><strong>{t('location') || 'Location'}:</strong> {int.link}</span>
+                  )}
                 </div>
               )}
             </div>
