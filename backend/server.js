@@ -28,7 +28,7 @@ const bcrypt = require('bcrypt');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: '*' }
+  cors: { origin: 'https://spectacular-gumdrop-ac0359.netlify.app' }
 });
 
 const userSocketMap = new Map();
@@ -36,6 +36,17 @@ const userSocketMap = new Map();
 // Middleware - moved to top to parse request bodies
 app.use(bodyParser.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// CORS Middleware for REST API
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'https://spectacular-gumdrop-ac0359.netlify.app');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 // Current user info
 app.get('/api/me', async (req, res) => {
