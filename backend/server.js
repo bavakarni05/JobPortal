@@ -28,7 +28,7 @@ const bcrypt = require('bcrypt');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: 'https://spectacular-gumdrop-ac0359.netlify.app' }
+  cors: { origin: 'https://shimmering-basbousa-ee5819.netlify.app' }
 });
 
 const userSocketMap = new Map();
