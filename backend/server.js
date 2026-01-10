@@ -39,7 +39,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // CORS Middleware for REST API
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'https://spectacular-gumdrop-ac0359.netlify.app');
+  res.header('Access-Control-Allow-Origin', 'https://shimmering-basbousa-ee5819.netlify.app');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
   if (req.method === 'OPTIONS') {
