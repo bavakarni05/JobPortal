@@ -257,7 +257,7 @@ function JobProviderDashboard({ onLogout }) {
     <div className="dashboard-container">
       <div className="header-bar">
         <div className="header-title">{t('app_title')}</div>
-        <div className="header-nav">
+        <div className="header-nav" style={{ overflowX: 'auto', whiteSpace: 'nowrap' }}>
           <button className={section === 'home' ? 'active' : ''} onClick={() => setSection('home')}>{t('home')}</button>
           <button className={section === 'add' ? 'active' : ''} onClick={() => setSection('add')}>{t('add_job')}</button>
           <button className={section === 'view' ? 'active' : ''} onClick={() => setSection('view')}>{t('my_jobs')}</button>

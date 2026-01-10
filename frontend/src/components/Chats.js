@@ -20,6 +20,13 @@ function Chats({ initialChatId }) {
   const typingTimer = useRef(null);
   const fileInputRef = useRef(null);
   const [file, setFile] = useState(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     fetchChats();
@@ -163,8 +170,9 @@ function Chats({ initialChatId }) {
   }, [search, chats, username]);
 
   return (
-    <div className="chat-container" style={{ display: 'flex', height: '85vh', width: '95%', margin: '20px auto', border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#f9f9f9' }}>
-      <div className="chat-sidebar" style={{ width: '300px', borderRight: '1px solid #ddd', display: 'flex', flexDirection: 'column', backgroundColor: '#fff' }}>
+    <div className="chat-container" style={{ display: 'flex', height: '85vh', width: '95%', margin: '20px auto', border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#f9f9f9', flexDirection: isMobile ? 'column' : 'row' }}>
+      {(!isMobile || !activeChat) && (
+      <div className="chat-sidebar" style={{ width: isMobile ? '100%' : '300px', borderRight: isMobile ? 'none' : '1px solid #ddd', display: 'flex', flexDirection: 'column', backgroundColor: '#fff', height: isMobile ? '100%' : 'auto' }}>
         <div className="chat-search" style={{ padding: '10px', borderBottom: '1px solid #eee' }}>
           <input placeholder={t('search_jobs')} value={search} onChange={e => setSearch(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: '20px', border: '1px solid #ccc', outline: 'none', boxSizing: 'border-box' }} />
         </div>
@@ -184,10 +192,13 @@ function Chats({ initialChatId }) {
           })}
         </ul>
       </div>
-      <div className="chat-main" style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#fff' }}>
+      )}
+      {(!isMobile || activeChat) && (
+      <div className="chat-main" style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#fff', height: isMobile ? '100%' : 'auto' }}>
         {activeChat ? (
           <>
             <div className="chat-header" style={{ padding: '15px 20px', borderBottom: '1px solid #ddd', display: 'flex', alignItems: 'center', backgroundColor: 'white', boxShadow: '0 2px 5px rgba(0,0,0,0.05)', zIndex: 10 }}>
+              {isMobile && <button onClick={() => setActiveChat(null)} style={{ marginRight: 10, background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', padding: '0 5px' }}>←</button>}
               <div className="avatar" style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#007bff', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', marginRight: '15px' }}>{(activeChat.participants?.find(p => p.username !== username)?.username || '?')[0]?.toUpperCase() || '?'}</div>
               <div>
                 <div className="chat-title" style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{activeChat.participants?.find(p => p.username !== username)?.username || t('unknown_user')}</div>
@@ -268,6 +279,7 @@ function Chats({ initialChatId }) {
           <div className="chat-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, color: '#6b7280', fontSize: '1.2rem' }}>{t('select_chat_to_start')}</div>
         )}
       </div>
+      )}
     </div>
   );
 }
