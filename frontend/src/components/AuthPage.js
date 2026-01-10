@@ -18,7 +18,7 @@ function AuthPage({ onLogin }) {
     try {
       if (isSignup) {
         // Signup request
-        const res = await fetch('/api/signup', {
+        const res = await fetch('https://jobportal-3-trrm.onrender.com/api/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password, role, profile: role === 'jobseeker' ? { preferredCategories } : {} })
@@ -41,7 +41,7 @@ function AuthPage({ onLogin }) {
   };
 
   const handleLogin = async () => {
-    const res = await fetch('/api/login', {
+    const res = await fetch('https://jobportal-3-trrm.onrender.com/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })

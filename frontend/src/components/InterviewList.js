@@ -14,7 +14,7 @@ function InterviewList() {
 
   const fetchInterviews = async () => {
     try {
-      const res = await fetch(`/api/interviews?username=${username}`);
+      const res = await fetch(`https://jobportal-3-trrm.onrender.com/api/interviews?username=${username}`);
       if (res.ok) {
         const data = await res.json();
         setInterviews(data);

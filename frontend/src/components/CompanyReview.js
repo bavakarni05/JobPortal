@@ -15,7 +15,7 @@ function CompanyReview({ companyName }) {
 
   const fetchReviews = async () => {
     try {
-      const res = await fetch(`/api/reviews?company=${encodeURIComponent(companyName)}`);
+      const res = await fetch(`https://jobportal-3-trrm.onrender.com/api/reviews?company=${encodeURIComponent(companyName)}`);
       if (res.ok) {
         const data = await res.json();
         setReviews(data);
@@ -29,7 +29,7 @@ function CompanyReview({ companyName }) {
     e.preventDefault();
     if (!username) return alert(t('login_required') || 'Please login to review');
     try {
-      const res = await fetch('/api/reviews', {
+      const res = await fetch('https://jobportal-3-trrm.onrender.com/api/reviews', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ company: companyName, username, rating, comment })

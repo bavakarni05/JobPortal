@@ -3,7 +3,7 @@ import { io } from 'socket.io-client';
 import { useLanguage } from '../LanguageContext';
 
 
-const socket = io('http://localhost:5000');
+const socket = io('https://jobportal-3-trrm.onrender.com');
 
 function Chats({ initialChatId }) {
   const { t } = useLanguage();
@@ -81,7 +81,7 @@ function Chats({ initialChatId }) {
   }, [messages, activeChat]);
 
   const fetchChats = async () => {
-    const res = await fetch(`/api/chats?username=${username}`);
+    const res = await fetch(`https://jobportal-3-trrm.onrender.com/api/chats?username=${username}`);
     const data = await res.json();
     if (res.ok) {
       const sorted = [...data].sort((a,b)=> new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0));
@@ -92,7 +92,7 @@ function Chats({ initialChatId }) {
   const openChat = async (chat) => {
     setActiveChat(chat);
     socket.emit('join', chat._id);
-    const res = await fetch(`/api/chats/${chat._id}/messages`);
+    const res = await fetch(`https://jobportal-3-trrm.onrender.com/api/chats/${chat._id}/messages`);
     const data = await res.json();
     if (res.ok) setMessages(data);
   };
@@ -107,7 +107,7 @@ function Chats({ initialChatId }) {
       formData.append('file', file);
     }
 
-    const res = await fetch(`/api/chats/${activeChat._id}/messages`, {
+    const res = await fetch(`https://jobportal-3-trrm.onrender.com/api/chats/${activeChat._id}/messages`, {
       method: 'POST',
       body: formData,
     });
@@ -133,7 +133,7 @@ function Chats({ initialChatId }) {
   const handleSaveEdit = async (messageId) => {
     if (!editContent.trim()) return;
     try {
-      await fetch(`/api/messages/${messageId}`, {
+      await fetch(`https://jobportal-3-trrm.onrender.com/api/messages/${messageId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, content: editContent }),
@@ -149,7 +149,7 @@ function Chats({ initialChatId }) {
   const handleDelete = async (messageId) => {
     if (!window.confirm(t('delete_message_confirm'))) return;
     try {
-      await fetch(`/api/messages/${messageId}`, {
+      await fetch(`https://jobportal-3-trrm.onrender.com/api/messages/${messageId}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username }),

@@ -40,7 +40,7 @@ function JobProviderDashboard({ onLogout }) {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`/api/jobs?username=${username}`);
+      const res = await fetch(`https://jobportal-3-trrm.onrender.com/api/jobs?username=${username}`);
       const data = await res.json();
       if (res.ok) {
         setAllJobs(data);
@@ -60,7 +60,7 @@ function JobProviderDashboard({ onLogout }) {
 
   const fetchNotifications = async () => {
     try {
-      const res = await fetch(`/api/notifications?username=${username}`);
+      const res = await fetch(`https://jobportal-3-trrm.onrender.com/api/notifications?username=${username}`);
       const data = await res.json();
       if (res.ok) {
         setNotifications(data);
@@ -89,7 +89,7 @@ function JobProviderDashboard({ onLogout }) {
       try {
         let newTitle = j.title;
         if (j.title && language !== 'en') {
-          const r = await fetch('/api/translate', {
+          const r = await fetch('https://jobportal-3-trrm.onrender.com/api/translate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text: j.title, target: language })
@@ -99,7 +99,7 @@ function JobProviderDashboard({ onLogout }) {
         }
         let newDesc = j.description;
         if (j.description && language !== 'en') {
-          const r2 = await fetch('/api/translate', {
+          const r2 = await fetch('https://jobportal-3-trrm.onrender.com/api/translate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text: j.description, target: language })
@@ -110,7 +110,7 @@ function JobProviderDashboard({ onLogout }) {
         // Company
         let newCompany = j.company;
         if (j.company && language !== 'en') {
-          const rc = await fetch('/api/translate', {
+          const rc = await fetch('https://jobportal-3-trrm.onrender.com/api/translate', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text: j.company, target: language })
           });
@@ -120,7 +120,7 @@ function JobProviderDashboard({ onLogout }) {
         // Location
         let newLoc = j.location;
         if (j.location && language !== 'en') {
-          const rl = await fetch('/api/translate', {
+          const rl = await fetch('https://jobportal-3-trrm.onrender.com/api/translate', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text: j.location, target: language })
           });
@@ -154,7 +154,7 @@ function JobProviderDashboard({ onLogout }) {
     e.preventDefault();
     setError(''); setSuccess('');
     try {
-      const res = await fetch('/api/jobs', {
+      const res = await fetch('https://jobportal-3-trrm.onrender.com/api/jobs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...form, ...optional, username })
@@ -176,7 +176,7 @@ function JobProviderDashboard({ onLogout }) {
     setExpandedJob(jobId);
     if (!applications[jobId]) {
       try {
-        const res = await fetch(`/api/jobs/${jobId}/applications`);
+        const res = await fetch(`https://jobportal-3-trrm.onrender.com/api/jobs/${jobId}/applications`);
         const data = await res.json();
         if (res.ok) setApplications(apps => ({ ...apps, [jobId]: data }));
         else setError(data.error || t('failed_to_fetch'));
@@ -189,7 +189,7 @@ function JobProviderDashboard({ onLogout }) {
   const handleDeleteJob = async (jobId) => {
     if (!window.confirm(t('delete_confirm'))) return;
     try {
-      const res = await fetch(`/api/jobs/${jobId}`, { method: 'DELETE' });
+      const res = await fetch(`https://jobportal-3-trrm.onrender.com/api/jobs/${jobId}`, { method: 'DELETE' });
       const data = await res.json();
       if (res.ok) fetchJobs();
       else alert(data.error || t('failed_to_delete'));
@@ -200,7 +200,7 @@ function JobProviderDashboard({ onLogout }) {
 
   const openApplication = async (applicationId) => {
     try {
-      const res = await fetch(`/api/applications/${applicationId}`);
+      const res = await fetch(`https://jobportal-3-trrm.onrender.com/api/applications/${applicationId}`);
       const data = await res.json();
       if (res.ok) { setActiveApp(data); setShowAppModal(true); }
       else alert(data.error || t('failed_to_load_app'));
@@ -209,7 +209,7 @@ function JobProviderDashboard({ onLogout }) {
 
   const handleSelect = async (applicationId) => {
     try {
-      const res = await fetch(`/api/applications/${applicationId}/select`, { method: 'PATCH' });
+      const res = await fetch(`https://jobportal-3-trrm.onrender.com/api/applications/${applicationId}/select`, { method: 'PATCH' });
       const data = await res.json();
       if (res.ok) {
         alert(t('applicant_selected'));
@@ -228,11 +228,11 @@ function JobProviderDashboard({ onLogout }) {
 
   const handleMessage = async (applicationId) => {
     try {
-      const res = await fetch(`/api/applications/${applicationId}`);
+      const res = await fetch(`https://jobportal-3-trrm.onrender.com/api/applications/${applicationId}`);
       const data = await res.json();
       if (res.ok) {
         // Check if chat exists, if not create one
-        const chatRes = await fetch('/api/chats/create', {
+        const chatRes = await fetch('https://jobportal-3-trrm.onrender.com/api/chats/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
@@ -272,7 +272,7 @@ function JobProviderDashboard({ onLogout }) {
                 const next = !v;
                 if (next) {
                   setUnreadCount(0);
-                  fetch('/api/notifications/mark-read', {
+                  fetch('https://jobportal-3-trrm.onrender.com/api/notifications/mark-read', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username })

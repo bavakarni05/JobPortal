@@ -13,7 +13,7 @@ function InterviewScheduler({ applicationId, jobId, applicantUsername, interview
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch('/api/interviews', {
+      const res = await fetch('https://jobportal-3-trrm.onrender.com/api/interviews', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
