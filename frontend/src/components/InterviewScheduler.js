@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../LanguageContext';
 
-function InterviewScheduler({ applicationId, jobId, applicantUsername, onClose, onScheduled }) {
+function InterviewScheduler({ applicationId, jobId, applicantUsername, interviewerUsername, onClose, onScheduled }) {
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [type, setType] = useState('video');
@@ -20,6 +20,7 @@ function InterviewScheduler({ applicationId, jobId, applicantUsername, onClose, 
           applicationId,
           jobId,
           applicantUsername,
+          interviewerUsername,
           date,
           time,
           type,

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../LanguageContext';
 import { translateText } from '../utils/translateText';
 import '../job-details.css';
+import CompanyReview from './CompanyReview';
 
 function JobDetails() {
   const { jobId } = useParams();
@@ -189,6 +190,7 @@ function JobDetails() {
         {applied && <div className="success" style={{ marginTop: 12 }}>{t('applied')}</div>}
         {error && <div className="error" style={{ marginTop: 10 }}>{error}</div>}
         {success && <div className="success" style={{ marginTop: 10 }}>{success}</div>}
+        <CompanyReview companyName={job.company} />
         <div className="action-row" style={{ marginTop: 16 }}>
           <button onClick={() => navigate(-1)} className="btn-secondary">{t('back')}</button>
         </div>

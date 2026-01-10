@@ -9,24 +9,21 @@ const http = require('http');
 const { Server } = require('socket.io');
 const crypto = require('crypto');
 // Universal fetch: Node 18+ global fetch, else dynamic import of node-fetch
-const _fetch = (typeof fetch === 'function') ? fetch : (url, options) => (
-  import('node-fetch').then(({ default: f }) => f(url, options))
-);
+const _fetch = (typeof fetch === 'function') ? fetch : (url, options) => import('node-fetch').then(({ default: f }) => f(url, options));
 
-// Import models (for registration)
-require('./models/User');
-require('./models/Job');
-require('./models/Application');
-require('./models/Chat');
-require('./models/Message');
-require('./models/Saved');
+// Models
+const User = require('./models/User');
+const Job = require('./models/Job');
+const Application = require('./models/Application');
+const Chat = require('./models/Chat');
+const Message = require('./models/Message');
+const Saved = require('./models/Saved');
 const Block = require('./models/Block');
 const Report = require('./models/Report');
-
-const chatRoutes = require('./routes/chatRoutes');
-
-
-
+const Interview = require('./models/Interview');
+const Notification = require('./models/Notification');
+const Review = require('./models/Review');
+const bcrypt = require('bcrypt');
 
 const app = express();
 const server = http.createServer(app);
@@ -39,7 +36,6 @@ const userSocketMap = new Map();
 // Middleware - moved to top to parse request bodies
 app.use(bodyParser.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/api/chats', chatRoutes);
 
 // Current user info
 app.get('/api/me', async (req, res) => {
@@ -67,6 +63,7 @@ app.put('/api/profile', async (req, res) => {
       if (profile.preferredCategories !== undefined) user.profile.preferredCategories = profile.preferredCategories;
     }
     
+    user.markModified('profile');
     await user.save();
     res.json({ message: 'Profile updated', profile: user.profile });
   } catch (err) {
@@ -98,7 +95,7 @@ app.get('/api/recommendations', async (req, res) => {
       const appliedJobIds = apps.map(a => a.job).filter(Boolean);
       jobQuery._id = { $nin: appliedJobIds };
 
-      const jobs = await Job.find(jobQuery).populate('postedBy', 'username profile').sort({ createdAt: -1 }).limit(n); // Limit here as it's a direct recommendation
+      const jobs = await Job.find(jobQuery).populate('postedBy', 'username profile').sort({ createdAt: -1 });
       return res.json(jobs);
     }
 
@@ -257,15 +254,6 @@ mongoose.set('strictQuery', false);
 mongoose.connect(MONGO_URI)
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.error('MongoDB connection error:', err));
-
-const User = require('./models/User');
-const bcrypt = require('bcrypt');
-const Job = require('./models/Job');
-const Application = require('./models/Application');
-const Chat = require('./models/Chat');
-const Message = require('./models/Message');
-const Saved = require('./models/Saved');
-const Notification = require('./models/Notification');
 
 // Socket.IO events
 io.on('connection', (socket) => {
@@ -820,6 +808,94 @@ app.post('/api/chats/:chatId/messages', upload.single('file'), async (req, res) 
     res.status(201).json({ message: 'Message sent', data: populated });
   } catch (err) {
     console.error("Error sending message:", err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Schedule an interview
+app.post('/api/interviews', async (req, res) => {
+  const {
+    applicationId,
+    jobId,
+    applicantUsername,
+    interviewerUsername,
+    date,
+    time,
+    type,
+    link
+  } = req.body;
+
+  if (!applicationId || !jobId || !applicantUsername || !interviewerUsername || !date || !time || !type) {
+    return res.status(400).json({ error: 'Missing required fields for interview scheduling' });
+  }
+
+  try {
+    const job = await Job.findById(jobId);
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+
+    const interview = await Interview.create({
+      job: jobId,
+      application: applicationId,
+      interviewer: interviewerUsername,
+      applicant: applicantUsername,
+      jobTitle: job.title, // Denormalize title
+      date,
+      time,
+      type,
+      link
+    });
+
+    // Notify applicant
+    await Notification.create({
+      recipient: applicantUsername,
+      message: `You have an interview scheduled for "${job.title}" on ${new Date(date).toLocaleDateString()} at ${time}.`,
+      type: 'interview',
+      jobId: jobId,
+      applicationId: applicationId
+    });
+
+    res.status(201).json(interview);
+  } catch (err) {
+    console.error('Error scheduling interview:', err);
+    res.status(500).json({ error: 'Server error while scheduling interview' });
+  }
+});
+
+// Get interviews for a user (both as applicant and interviewer)
+app.get('/api/interviews', async (req, res) => {
+  const { username } = req.query;
+  if (!username) return res.status(400).json({ error: 'Username required' });
+
+  try {
+    const interviews = await Interview.find({
+      $or: [{ applicant: username }, { interviewer: username }]
+    }).sort({ date: -1, time: -1 });
+    res.json(interviews);
+  } catch (err) {
+    console.error('Error fetching interviews:', err);
+    res.status(500).json({ error: 'Server error fetching interviews' });
+  }
+});
+
+// Reviews
+app.get('/api/reviews', async (req, res) => {
+  const { company } = req.query;
+  if (!company) return res.json([]);
+  try {
+    const reviews = await Review.find({ company: new RegExp(`^${company}$`, 'i') }).sort({ createdAt: -1 });
+    res.json(reviews);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.post('/api/reviews', async (req, res) => {
+  const { company, username, rating, comment } = req.body;
+  if (!company || !username || !rating || !comment) return res.status(400).json({ error: 'All fields required' });
+  try {
+    const review = await Review.create({ company, username, rating, comment });
+    res.status(201).json(review);
+  } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
 });

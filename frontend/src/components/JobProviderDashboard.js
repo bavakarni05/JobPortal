@@ -524,8 +524,9 @@ function JobProviderDashboard({ onLogout }) {
       {schedulingApp && (
         <InterviewScheduler
           applicationId={schedulingApp._id}
-          jobId={schedulingApp.job?._id}
+          jobId={schedulingApp.job?._id || schedulingApp.job}
           applicantUsername={schedulingApp.applicant?.username}
+          interviewerUsername={username}
           onClose={() => setSchedulingApp(null)}
           onScheduled={() => {
             setSchedulingApp(null);
