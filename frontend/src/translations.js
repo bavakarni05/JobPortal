@@ -1,6 +1,6 @@
 export const translations = {
   en: {
-    app_title: 'Women Job Portal',
+    app_title: 'FemConnect',
     discover: 'Discover Your Next Opportunity',
     empowering: 'Empowering Women Through Opportunity',
     home: 'Home',
