@@ -82,10 +82,24 @@ function JobSeekerDashboard({ onLogout }) {
 
   const fetchRecommendations = async () => {
     try {
-      const res = await fetch(`/api/recommendations?username=${username}`);
+      const resProfile = await fetch(`/api/me?username=${username}`);
+      const dataProfile = await resProfile.json();
+      let prefs = [];
+      if (resProfile.ok && dataProfile.profile) {
+        prefs = dataProfile.profile.preferredCategories || [];
+      }
+
+      const res = await fetch('/api/all-jobs');
       const data = await res.json();
-      if (res.ok && Array.isArray(data)) setRecommended(data);
-    } catch {}
+      if (res.ok && Array.isArray(data)) {
+        if (prefs.length > 0) {
+          const filtered = data.filter(job => job.category && prefs.includes(job.category));
+          setRecommended(filtered);
+        } else {
+          setRecommended(data);
+        }
+      }
+    } catch (e) { console.error(e); }
   };
 
   useEffect(() => {
@@ -387,7 +401,7 @@ function JobSeekerDashboard({ onLogout }) {
                     }}
                     style={{ height: 120 }}
                   >
-                    {['Skilled', 'Semi-skilled', 'Non-skilled'].map(cat => (
+                    {['IT', 'Food', 'Medical', 'Education', 'Retail', 'Construction', 'Other'].map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
                     ))}
                   </select>

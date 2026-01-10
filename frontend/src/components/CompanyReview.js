@@ -44,7 +44,7 @@ function CompanyReview({ companyName }) {
   };
 
   return (
-    <div className="review-section" style={{ marginTop: 24, padding: 16, background: '#fff', borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+    <div className="review-section" style={{ marginTop: 24, padding: 16, background: '#fff', borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', textAlign: 'left' }}>
       <h3 style={{ marginBottom: 16 }}>{t('company_reviews') || 'Company Reviews'} - {companyName}</h3>
       <div className="reviews-list" style={{ marginBottom: 20 }}>
         {reviews.length === 0 ? <p style={{ color: '#666' }}>{t('no_reviews_yet') || 'No reviews yet. Be the first!'}</p> : reviews.map((r, i) => (

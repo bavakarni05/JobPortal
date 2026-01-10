@@ -379,7 +379,7 @@ function JobProviderDashboard({ onLogout }) {
                 <label className="label">{t('category')}</label>
                 <select className="input" name="category" value={optional.category} onChange={handleOptionalChange}>
                   <option value="">{t('select') || 'Select'}</option>
-                  {['Skilled', 'Semi-skilled', 'Non-skilled'].map(cat => (
+                  {['IT', 'Food', 'Medical', 'Education', 'Retail', 'Construction', 'Other'].map(cat => (
                     <option key={cat} value={cat}>{cat}</option>
                   ))}
                 </select>

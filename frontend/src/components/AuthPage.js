@@ -91,7 +91,7 @@ function AuthPage({ onLogin }) {
                 }}
                 style={{ height: 100 }}
               >
-                {['Skilled', 'Semi-skilled', 'Non-skilled'].map(cat => (
+                {['IT', 'Food', 'Medical', 'Education', 'Retail', 'Construction', 'Other'].map(cat => (
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
               </select>
