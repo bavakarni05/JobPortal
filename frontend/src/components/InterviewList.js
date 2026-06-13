@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useLanguage } from '../LanguageContext';
 
+const BACKEND_URL = 'https://jobportal-5-b3v6.onrender.com';
+
 function InterviewList() {
   const [interviews, setInterviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -14,7 +16,7 @@ function InterviewList() {
 
   const fetchInterviews = async () => {
     try {
-      const res = await fetch(`https://jobportal-3-trrm.onrender.com/api/interviews?username=${username}`);
+      const res = await fetch(`${BACKEND_URL}/api/interviews?username=${username}`);
       if (res.ok) {
         const data = await res.json();
         setInterviews(data);

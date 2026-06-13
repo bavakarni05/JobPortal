@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../LanguageContext';
 
+const BACKEND_URL = 'https://jobportal-5-b3v6.onrender.com';
+
 function InterviewScheduler({ applicationId, jobId, applicantUsername, interviewerUsername, onClose, onScheduled }) {
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
@@ -13,7 +15,7 @@ function InterviewScheduler({ applicationId, jobId, applicantUsername, interview
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch('https://jobportal-3-trrm.onrender.com/api/interviews', {
+      const res = await fetch(`${BACKEND_URL}/api/interviews`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

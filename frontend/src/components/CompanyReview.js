@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../LanguageContext';
 
+const BACKEND_URL = 'https://jobportal-5-b3v6.onrender.com';
+
 function CompanyReview({ companyName }) {
   const [reviews, setReviews] = useState([]);
   const [rating, setRating] = useState(5);
@@ -15,7 +17,7 @@ function CompanyReview({ companyName }) {
 
   const fetchReviews = async () => {
     try {
-      const res = await fetch(`https://jobportal-3-trrm.onrender.com/api/reviews?company=${encodeURIComponent(companyName)}`);
+      const res = await fetch(`${BACKEND_URL}/api/reviews?company=${encodeURIComponent(companyName)}`);
       if (res.ok) {
         const data = await res.json();
         setReviews(data);
@@ -29,7 +31,7 @@ function CompanyReview({ companyName }) {
     e.preventDefault();
     if (!username) return alert(t('login_required') || 'Please login to review');
     try {
-      const res = await fetch('https://jobportal-3-trrm.onrender.com/api/reviews', {
+      const res = await fetch(`${BACKEND_URL}/api/reviews`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ company: companyName, username, rating, comment })

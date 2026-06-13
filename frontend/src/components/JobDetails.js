@@ -5,6 +5,8 @@ import { translateText } from '../utils/translateText';
 import '../job-details.css';
 import CompanyReview from './CompanyReview';
 
+const BACKEND_URL = 'https://jobportal-5-b3v6.onrender.com';
+
 function JobDetails() {
   const { jobId } = useParams();
   const navigate = useNavigate();
@@ -24,7 +26,7 @@ function JobDetails() {
     fetchJob();
     // Check if already applied
     if (username) {
-      fetch(`https://jobportal-3-trrm.onrender.com/api/my-applications?username=${username}`)
+      fetch(`${BACKEND_URL}/api/my-applications?username=${username}`)
         .then(res => res.json())
         .then(data => {
           if (Array.isArray(data) && data.some(a => a.job?._id === jobId)) setApplied(true);
@@ -57,7 +59,7 @@ function JobDetails() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('https://jobportal-3-trrm.onrender.com/api/all-jobs');
+      const res = await fetch(`${BACKEND_URL}/api/all-jobs`);
       const data = await res.json();
       if (res.ok) {
         const found = data.find(j => j._id === jobId);
@@ -102,7 +104,7 @@ function JobDetails() {
       formData.append('contactNo', applyForm.contactNo);
       if (resume) formData.append('resume', resume);
 
-      const res = await fetch('https://jobportal-3-trrm.onrender.com/api/apply', { method: 'POST', body: formData });
+      const res = await fetch(`${BACKEND_URL}/api/apply`, { method: 'POST', body: formData });
       const data = await res.json();
       if (res.ok) {
         setSuccess(t('application_submitted'));

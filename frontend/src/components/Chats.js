@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import { useLanguage } from '../LanguageContext';
 
-const BACKEND_URL = 'https://jobportal-3-trrm.onrender.com';
+const BACKEND_URL = 'https://jobportal-5-b3v6.onrender.com';
 const socket = io(BACKEND_URL);
 
 function Chats({ initialChatId }) {
@@ -94,7 +94,7 @@ function Chats({ initialChatId }) {
   }, [initialChatId, chats]);
 
   const fetchChats = async () => {
-    const res = await fetch(`https://jobportal-3-trrm.onrender.com/api/chats?username=${username}`);
+    const res = await fetch(`${BACKEND_URL}/api/chats?username=${username}`);
     const data = await res.json();
     if (res.ok) {
       const sorted = [...data].sort((a,b)=> new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0));
@@ -105,7 +105,7 @@ function Chats({ initialChatId }) {
   const openChat = async (chat) => {
     setActiveChat(chat);
     socket.emit('join', chat._id);
-    const res = await fetch(`https://jobportal-3-trrm.onrender.com/api/chats/${chat._id}/messages`);
+    const res = await fetch(`${BACKEND_URL}/api/chats/${chat._id}/messages`);
     const data = await res.json();
     if (res.ok) setMessages(data);
   };
@@ -120,7 +120,7 @@ function Chats({ initialChatId }) {
       formData.append('file', file);
     }
 
-    const res = await fetch(`https://jobportal-3-trrm.onrender.com/api/chats/${activeChat._id}/messages`, {
+    const res = await fetch(`${BACKEND_URL}/api/chats/${activeChat._id}/messages`, {
       method: 'POST',
       body: formData,
     });
@@ -146,7 +146,7 @@ function Chats({ initialChatId }) {
   const handleSaveEdit = async (messageId) => {
     if (!editContent.trim()) return;
     try {
-      await fetch(`https://jobportal-3-trrm.onrender.com/api/messages/${messageId}`, {
+      await fetch(`${BACKEND_URL}/api/messages/${messageId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, content: editContent }),
@@ -162,7 +162,7 @@ function Chats({ initialChatId }) {
   const handleDelete = async (messageId) => {
     if (!window.confirm(t('delete_message_confirm'))) return;
     try {
-      await fetch(`https://jobportal-3-trrm.onrender.com/api/messages/${messageId}`, {
+      await fetch(`${BACKEND_URL}/api/messages/${messageId}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username }),
