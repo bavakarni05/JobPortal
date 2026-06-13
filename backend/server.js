@@ -555,7 +555,8 @@ app.post('/api/apply', upload.single('resume'), async (req, res) => {
     if (existing) return res.status(400).json({ error: 'Already applied to this job' });
 
     const resumePath = req.file ? req.file.path : undefined; // Cloudinary returns the full URL in .path
-    const appDoc = new Application({ job: jobId, applicant: user._id, applicantName, age, address, contactNo, email, resumePath });
+    const resumePublicId = req.file ? req.file.filename : undefined;
+    const appDoc = new Application({ job: jobId, applicant: user._id, applicantName, age, address, contactNo, email, resumePath, resumePublicId });
     await appDoc.save();
     res.status(201).json({ message: 'Application submitted' });
   } catch (err) {

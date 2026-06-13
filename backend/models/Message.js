@@ -8,7 +8,8 @@ const MessageSchema = new mongoose.Schema({
   edited: { type: Boolean, default: false },
   fileUrl: { type: String },
   fileName: { type: String },
-  fileType: { type: String }
+  fileType: { type: String },
+  filePublicId: { type: String }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Message', MessageSchema);

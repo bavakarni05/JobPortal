@@ -17,6 +17,7 @@ const ApplicationSchema = new mongoose.Schema({
   email: { type: String },
   contactNo: { type: String },
   resumePath: { type: String },
+  resumePublicId: { type: String },
   status: {
     type: String,
     enum: ['applied', 'reviewed', 'accepted', 'rejected'],
