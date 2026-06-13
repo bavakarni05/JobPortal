@@ -282,14 +282,14 @@ function JobProviderDashboard({ onLogout }) {
           <div className="landing-nav__logo" style={{ cursor: 'pointer' }} onClick={() => setSection('home')}>
             <span style={{ fontSize: '1.6rem', fontWeight: 900, background: 'var(--gradient-primary)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>FemConnect</span>
           </div>
-          <div className="landing-nav__right-section">
-            <div className="landing-nav__links">
-              <button className={section === 'home' ? 'active' : ''} onClick={() => setSection('home')}>{t('home')}</button>
-              <button className={section === 'add' ? 'active' : ''} onClick={() => setSection('add')}>{t('add_job')}</button>
-              <button className={section === 'view' ? 'active' : ''} onClick={() => setSection('view')}>{t('my_jobs')}</button>
-              <button className={section === 'chats' ? 'active' : ''} onClick={() => setSection('chats')}>{t('chats')}</button>
-              <button className={section === 'interviews' ? 'active' : ''} onClick={() => setSection('interviews')}>{t('interviews') || 'Interviews'}</button>
-            </div>
+          <div className="landing-nav__links" style={{ flex: 1, display: 'flex', justifyContent: 'center', gap: '10px' }}>
+            <button className={section === 'home' ? 'active' : ''} onClick={() => setSection('home')}>{t('home')}</button>
+            <button className={section === 'add' ? 'active' : ''} onClick={() => setSection('add')}>{t('add_job')}</button>
+            <button className={section === 'view' ? 'active' : ''} onClick={() => setSection('view')}>{t('my_jobs')}</button>
+            <button className={section === 'chats' ? 'active' : ''} onClick={() => setSection('chats')}>{t('chats')}</button>
+            <button className={section === 'interviews' ? 'active' : ''} onClick={() => setSection('interviews')}>{t('interviews')}</button>
+          </div>
+          <div className="landing-nav__right-section" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             <div
               className="notification-bell"
               onClick={() => {

@@ -334,15 +334,15 @@ function JobSeekerDashboard({ onLogout }) {
           <div className="landing-nav__logo" style={{ cursor: 'pointer' }} onClick={() => setSection('home')}>
             <span style={{ fontSize: '1.6rem', fontWeight: 900, background: 'var(--gradient-primary)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>FemConnect</span>
           </div>
-          <div className="landing-nav__right-section">
-            <div className="landing-nav__links">
-              <button className={section === 'home' ? 'active' : ''} onClick={() => setSection('home')}>{t('home')}</button>
-              <button className={section === 'view' ? 'active' : ''} onClick={() => setSection('view')}>{t('view_jobs')}</button>
-              <button className={section === 'applications' ? 'active' : ''} onClick={() => setSection('applications')}>{t('my_applications')}</button>
-              <button className={section === 'recommendations' ? 'active' : ''} onClick={() => setSection('recommendations')}>{t('recommendations') || 'Recommendations'}</button>
-              <button className={section === 'chats' ? 'active' : ''} onClick={() => setSection('chats')}>{t('chats')}</button>
-              <button className={section === 'interviews' ? 'active' : ''} onClick={() => setSection('interviews')}>{t('interviews') || 'Interviews'}</button>
-            </div>
+          <div className="landing-nav__links" style={{ flex: 1, display: 'flex', justifyContent: 'center', gap: '8px' }}>
+            <button className={section === 'home' ? 'active' : ''} onClick={() => setSection('home')}>{t('home')}</button>
+            <button className={section === 'view' ? 'active' : ''} onClick={() => setSection('view')}>{t('view_jobs')}</button>
+            <button className={section === 'applications' ? 'active' : ''} onClick={() => setSection('applications')}>{t('my_applications')}</button>
+            <button className={section === 'recommendations' ? 'active' : ''} onClick={() => setSection('recommendations')}>{t('recommendations')}</button>
+            <button className={section === 'chats' ? 'active' : ''} onClick={() => setSection('chats')}>{t('chats')}</button>
+            <button className={section === 'interviews' ? 'active' : ''} onClick={() => setSection('interviews')}>{t('interviews')}</button>
+          </div>
+          <div className="landing-nav__right-section" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             <div
               className="notification-bell"
               onClick={async () => {
