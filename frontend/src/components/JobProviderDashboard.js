@@ -311,7 +311,7 @@ function JobProviderDashboard({ onLogout }) {
             <button style={{ whiteSpace: 'nowrap', fontSize: '0.9rem', width: isMobile ? '100%' : 'auto' }} className={section === 'chats' ? 'active' : ''} onClick={() => { setSection('chats'); setIsMenuOpen(false); }}>{t('chats')}</button>
             <button style={{ whiteSpace: 'nowrap', fontSize: '0.9rem', width: isMobile ? '100%' : 'auto' }} className={section === 'interviews' ? 'active' : ''} onClick={() => { setSection('interviews'); setIsMenuOpen(false); }}>{t('interviews')}</button>
           </div>
-          <div className="landing-nav__right-section" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <div className="landing-nav__right-section" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div
               className="notification-bell"
               onClick={() => {
