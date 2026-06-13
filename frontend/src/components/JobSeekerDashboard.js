@@ -334,68 +334,68 @@ function JobSeekerDashboard({ onLogout }) {
           <div className="landing-nav__logo" style={{ cursor: 'pointer' }} onClick={() => setSection('home')}>
             <span style={{ fontSize: '1.6rem', fontWeight: 900, background: 'var(--gradient-primary)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>FemConnect</span>
           </div>
-          <div className="landing-nav__links" style={{ flex: 1 }}>
-          <button className={section === 'home' ? 'active' : ''} onClick={() => setSection('home')}>{t('home')}</button>
-          <button className={section === 'view' ? 'active' : ''} onClick={() => setSection('view')}>{t('view_jobs')}</button>
-          <button className={section === 'applications' ? 'active' : ''} onClick={() => setSection('applications')}>{t('my_applications')}</button>
-          <button className={section === 'recommendations' ? 'active' : ''} onClick={() => setSection('recommendations')}>{t('recommendations') || 'Recommendations'}</button>
-          <button className={section === 'chats' ? 'active' : ''} onClick={() => setSection('chats')}>{t('chats')}</button>
-          <button className={section === 'interviews' ? 'active' : ''} onClick={() => setSection('interviews')}>{t('interviews') || 'Interviews'}</button>
+          <div className="landing-nav__right-section">
+            <div className="landing-nav__links">
+              <button className={section === 'home' ? 'active' : ''} onClick={() => setSection('home')}>{t('home')}</button>
+              <button className={section === 'view' ? 'active' : ''} onClick={() => setSection('view')}>{t('view_jobs')}</button>
+              <button className={section === 'applications' ? 'active' : ''} onClick={() => setSection('applications')}>{t('my_applications')}</button>
+              <button className={section === 'recommendations' ? 'active' : ''} onClick={() => setSection('recommendations')}>{t('recommendations') || 'Recommendations'}</button>
+              <button className={section === 'chats' ? 'active' : ''} onClick={() => setSection('chats')}>{t('chats')}</button>
+              <button className={section === 'interviews' ? 'active' : ''} onClick={() => setSection('interviews')}>{t('interviews') || 'Interviews'}</button>
+            </div>
+            <div
+              className="notification-bell"
+              onClick={async () => {
+                setShowNotifications(v => {
+                  const next = !v;
+                  if (next) {
+                    // opening dropdown => mark read
+                    setUnreadCount(0);
+                    // best-effort mark-read API
+                    fetch('https://jobportal-3-trrm.onrender.com/api/notifications/mark-read', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ username })
+                    }).catch(() => {});
+                  }
+                  return next;
+                });
+              }}
+            >
+              <span className="bell-icon">🔔</span>
+              {unreadCount > 0 && !showNotifications && (
+                <span className="notification-badge">{unreadCount}</span>
+              )}
+              {showNotifications && (
+                <div className="notification-dropdown">
+                  <div className="notification-header">{t('notifications')}</div>
+                  {notifications.length === 0 ? (
+                    <div className="no-notifications">{t('no_notifications')}</div>
+                  ) : (
+                    notifications.map(notif => (
+                      <div key={notif._id} className="notification-item">
+                        <div className="notification-text">{notif.message}</div>
+                        <div className="notification-time">{new Date(notif.createdAt).toLocaleDateString()}</div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="header-profile" onClick={() => setShowProfileMenu(v => !v)}>
+              <div className="profile-icon">{username[0]?.toUpperCase() || 'JS'}</div>
+              {showProfileMenu && (
+                <div className="profile-menu">
+                  <div className="profile-menu-header">{username}</div>
+                  <button onClick={() => { setSection('profile'); setShowProfileMenu(false); }}>{t('profile') || 'Profile'}</button>
+                  <button onClick={onLogout} style={{ color: '#ef4444' }}>{t('logout')}</button>
+                </div>
+              )}
+            </div>
+            <LanguageSelector />
           </div>
-          <div className="header-right">
-          <div
-            className="notification-bell"
-            onClick={async () => {
-              setShowNotifications(v => {
-                const next = !v;
-                if (next) {
-                  // opening dropdown => mark read
-                  setUnreadCount(0);
-                  // best-effort mark-read API
-                  fetch('https://jobportal-3-trrm.onrender.com/api/notifications/mark-read', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username })
-                  }).catch(() => {});
-                }
-                return next;
-              });
-            }}
-          >
-            <span className="bell-icon">🔔</span>
-            {unreadCount > 0 && !showNotifications && (
-              <span className="notification-badge">{unreadCount}</span>
-            )}
-            {showNotifications && (
-              <div className="notification-dropdown">
-                <div className="notification-header">{t('notifications')}</div>
-                {notifications.length === 0 ? (
-                  <div className="no-notifications">{t('no_notifications')}</div>
-                ) : (
-                  notifications.map(notif => (
-                    <div key={notif._id} className="notification-item">
-                      <div className="notification-text">{notif.message}</div>
-                      <div className="notification-time">{new Date(notif.createdAt).toLocaleDateString()}</div>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
-          <div className="header-profile" onClick={() => setShowProfileMenu(v => !v)}>
-            <div className="profile-icon">{username[0]?.toUpperCase() || 'JS'}</div>
-            {showProfileMenu && (
-              <div className="profile-menu">
-                <div className="profile-menu-header">{username}</div>
-                <button onClick={() => { setSection('profile'); setShowProfileMenu(false); }}>{t('profile') || 'Profile'}</button>
-                <button onClick={onLogout} style={{ color: '#ef4444' }}>{t('logout')}</button>
-              </div>
-            )}
-          </div>
-          <LanguageSelector />
         </div>
       </div>
-    </div>
 
       {section === 'profile' && (
         <div className="content-section feature-card" style={{ maxWidth: 800, margin: '40px auto' }}>

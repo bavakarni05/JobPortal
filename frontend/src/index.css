@@ -119,6 +119,13 @@ body {
   color: var(--text-primary);
 }
 
+.landing-nav__right-section {
+  display: flex;
+  align-items: center;
+  gap: 16px; /* Adjust gap as needed */
+  margin-left: auto; /* Push this section to the right */
+}
+
 .hero {
   min-height: 100vh;
   display: flex;
@@ -527,7 +534,7 @@ body {
 .header-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 16px; /* Keep gap for elements within header-right if it's still used, otherwise remove */
 }
 
 .error {

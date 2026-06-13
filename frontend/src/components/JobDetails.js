@@ -132,7 +132,9 @@ function JobDetails() {
             <div className="landing-nav__logo-icon">JD</div> {/* Job Details logo icon */}
             {t('app_title')}
           </div>
-          <button className="btn-secondary" onClick={() => navigate(-1)}>{t('back')}</button>
+          <div className="landing-nav__right-section">
+            <button className="btn-secondary" onClick={() => navigate(-1)}>{t('back')}</button>
+          </div>
         </div>
       </div>
 
