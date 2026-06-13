@@ -330,17 +330,17 @@ function JobSeekerDashboard({ onLogout }) {
   return (
     <div className="dashboard-container landing" style={{ paddingTop: section === 'home' ? 0 : 80 }}>
       <div className={`landing-nav ${scrolled ? 'landing-nav--scrolled' : ''} ${!visible ? 'landing-nav--hidden' : ''}`}>
-        <div className="landing-nav__inner">
+        <div className="landing-nav__inner" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '0 20px' }}>
           <div className="landing-nav__logo" style={{ cursor: 'pointer' }} onClick={() => setSection('home')}>
             <span style={{ fontSize: '1.6rem', fontWeight: 900, background: 'var(--gradient-primary)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>FemConnect</span>
           </div>
-          <div className="landing-nav__links" style={{ flex: 1, display: 'flex', justifyContent: 'center', gap: '8px' }}>
-            <button className={section === 'home' ? 'active' : ''} onClick={() => setSection('home')}>{t('home')}</button>
-            <button className={section === 'view' ? 'active' : ''} onClick={() => setSection('view')}>{t('view_jobs')}</button>
-            <button className={section === 'applications' ? 'active' : ''} onClick={() => setSection('applications')}>{t('my_applications')}</button>
-            <button className={section === 'recommendations' ? 'active' : ''} onClick={() => setSection('recommendations')}>{t('recommendations')}</button>
-            <button className={section === 'chats' ? 'active' : ''} onClick={() => setSection('chats')}>{t('chats')}</button>
-            <button className={section === 'interviews' ? 'active' : ''} onClick={() => setSection('interviews')}>{t('interviews')}</button>
+          <div className="landing-nav__links" style={{ flex: 1, display: 'flex', justifyContent: 'center', gap: '8px', overflow: 'hidden' }}>
+            <button style={{ whiteSpace: 'nowrap', fontSize: '0.85rem' }} className={section === 'home' ? 'active' : ''} onClick={() => setSection('home')}>{t('home')}</button>
+            <button style={{ whiteSpace: 'nowrap', fontSize: '0.85rem' }} className={section === 'view' ? 'active' : ''} onClick={() => setSection('view')}>{t('view_jobs')}</button>
+            <button style={{ whiteSpace: 'nowrap', fontSize: '0.85rem' }} className={section === 'applications' ? 'active' : ''} onClick={() => setSection('applications')}>{t('my_applications')}</button>
+            <button style={{ whiteSpace: 'nowrap', fontSize: '0.85rem' }} className={section === 'recommendations' ? 'active' : ''} onClick={() => setSection('recommendations')}>{t('recommendations')}</button>
+            <button style={{ whiteSpace: 'nowrap', fontSize: '0.85rem' }} className={section === 'chats' ? 'active' : ''} onClick={() => setSection('chats')}>{t('chats')}</button>
+            <button style={{ whiteSpace: 'nowrap', fontSize: '0.85rem' }} className={section === 'interviews' ? 'active' : ''} onClick={() => setSection('interviews')}>{t('interviews')}</button>
           </div>
           <div className="landing-nav__right-section" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             <div
