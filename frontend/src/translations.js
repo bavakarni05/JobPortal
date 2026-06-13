@@ -357,6 +357,8 @@ export const translations = {
     // Selection
     applicant_selected: 'விண்ணப்பதாரர் வெற்றிகரமாக தேர்ந்தெடுக்கப்பட்டார்!',
     failed_to_select_applicant: 'விண்ணப்பதாரரைத் தேர்ந்தெடுக்க முடியவில்லை',
+    recommendations:'பரிந்துரைகள்',
+    interviews:'நேர்காணல்கள்',
     recommended_for_you: 'உங்களுக்காக பரிந்துரைக்கப்படுபவை',
     scheduled_interviews: 'திட்டமிடப்பட்ட நேர்காணல்கள்',
     reviews: 'விமர்சனங்கள்',
