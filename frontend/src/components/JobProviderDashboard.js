@@ -284,25 +284,32 @@ function JobProviderDashboard({ onLogout }) {
         className={`landing-nav ${scrolled ? 'landing-nav--scrolled' : ''} ${!visible ? 'landing-nav--hidden' : ''}`}
         style={isMobile && isMenuOpen ? { overflow: 'visible', zIndex: 1100 } : {}}
       >
-        <div className="landing-nav__inner" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '0 20px' }}>
+        <div className="landing-nav__inner" style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between', 
+          width: '100%', 
+          padding: '0 20px',
+          ...(isMobile && isMenuOpen ? { overflow: 'visible' } : {}) 
+        }}>
           <div className="landing-nav__logo" style={{ cursor: 'pointer' }} onClick={() => setSection('home')}>
             <span style={{ fontSize: '1.6rem', fontWeight: 900, background: 'var(--gradient-primary)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>FemConnect</span>
           </div>
           <div className="landing-nav__links" style={{ 
-            flex: 1, 
+            flex: isMobile ? 'none' : 1, 
             display: isMobile ? (isMenuOpen ? 'flex' : 'none') : 'flex', 
             flexDirection: isMobile ? 'column' : 'row',
             justifyContent: 'center', 
             alignItems: 'center',
             gap: '12px', 
             overflow: isMobile && isMenuOpen ? 'visible' : 'hidden',
-            ...(isMobile && isMenuOpen ? { position: 'absolute', top: '80px', left: 0, right: 0, backgroundColor: 'rgba(20, 20, 20, 0.95)', backdropFilter: 'blur(15px)', padding: '20px', zIndex: 1000, borderBottom: '1px solid var(--border)' } : {})
+            ...(isMobile && isMenuOpen ? { position: 'absolute', top: '80px', left: 0, right: 0, width: '100%', backgroundColor: 'rgba(20, 20, 20, 0.98)', backdropFilter: 'blur(15px)', padding: '20px', zIndex: 1200, borderBottom: '1px solid var(--border)' } : {})
           }}>
-            <button style={{ whiteSpace: 'nowrap', fontSize: '0.9rem' }} className={section === 'home' ? 'active' : ''} onClick={() => { setSection('home'); setIsMenuOpen(false); }}>{t('home')}</button>
-            <button style={{ whiteSpace: 'nowrap', fontSize: '0.9rem' }} className={section === 'add' ? 'active' : ''} onClick={() => { setSection('add'); setIsMenuOpen(false); }}>{t('add_job')}</button>
-            <button style={{ whiteSpace: 'nowrap', fontSize: '0.9rem' }} className={section === 'view' ? 'active' : ''} onClick={() => { setSection('view'); setIsMenuOpen(false); }}>{t('my_jobs')}</button>
-            <button style={{ whiteSpace: 'nowrap', fontSize: '0.9rem' }} className={section === 'chats' ? 'active' : ''} onClick={() => { setSection('chats'); setIsMenuOpen(false); }}>{t('chats')}</button>
-            <button style={{ whiteSpace: 'nowrap', fontSize: '0.9rem' }} className={section === 'interviews' ? 'active' : ''} onClick={() => { setSection('interviews'); setIsMenuOpen(false); }}>{t('interviews')}</button>
+            <button style={{ whiteSpace: 'nowrap', fontSize: '0.9rem', width: isMobile ? '100%' : 'auto' }} className={section === 'home' ? 'active' : ''} onClick={() => { setSection('home'); setIsMenuOpen(false); }}>{t('home')}</button>
+            <button style={{ whiteSpace: 'nowrap', fontSize: '0.9rem', width: isMobile ? '100%' : 'auto' }} className={section === 'add' ? 'active' : ''} onClick={() => { setSection('add'); setIsMenuOpen(false); }}>{t('add_job')}</button>
+            <button style={{ whiteSpace: 'nowrap', fontSize: '0.9rem', width: isMobile ? '100%' : 'auto' }} className={section === 'view' ? 'active' : ''} onClick={() => { setSection('view'); setIsMenuOpen(false); }}>{t('my_jobs')}</button>
+            <button style={{ whiteSpace: 'nowrap', fontSize: '0.9rem', width: isMobile ? '100%' : 'auto' }} className={section === 'chats' ? 'active' : ''} onClick={() => { setSection('chats'); setIsMenuOpen(false); }}>{t('chats')}</button>
+            <button style={{ whiteSpace: 'nowrap', fontSize: '0.9rem', width: isMobile ? '100%' : 'auto' }} className={section === 'interviews' ? 'active' : ''} onClick={() => { setSection('interviews'); setIsMenuOpen(false); }}>{t('interviews')}</button>
           </div>
           <div className="landing-nav__right-section" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             <div
@@ -354,7 +361,10 @@ function JobProviderDashboard({ onLogout }) {
             <LanguageSelector />
             {isMobile && (
               <button 
-                onClick={() => setIsMenuOpen(!isMenuOpen)} 
+                onClick={() => {
+                  setIsMenuOpen(!isMenuOpen);
+                  if (!isMenuOpen) setVisible(true);
+                }} 
                 style={{ background: 'none', border: 'none', color: 'white', fontSize: '1.5rem', cursor: 'pointer', padding: '0 5px' }}
               >
                 {isMenuOpen ? '✕' : '☰'}
