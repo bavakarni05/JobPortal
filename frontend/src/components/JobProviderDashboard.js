@@ -331,6 +331,7 @@ function JobProviderDashboard({ onLogout }) {
           </div>
         </div>
       </div>
+    </div>
 
       {section === 'home' && (
         <section className="hero">

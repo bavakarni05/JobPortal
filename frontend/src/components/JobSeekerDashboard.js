@@ -387,6 +387,7 @@ function JobSeekerDashboard({ onLogout }) {
           </div>
         </div>
       </div>
+    </div>
 
       {section === 'profile' && (
         <div className="content-section feature-card" style={{ maxWidth: 800, margin: '40px auto' }}>
@@ -459,6 +460,7 @@ function JobSeekerDashboard({ onLogout }) {
                     </div>
                   ))}
                 </div>
+              </div>
             )}
           </div>
         </div>
