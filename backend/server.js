@@ -8,6 +8,8 @@ const fs = require('fs');
 const http = require('http');
 const { Server } = require('socket.io');
 const crypto = require('crypto');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 // Universal fetch: Node 18+ global fetch, else dynamic import of node-fetch
 const _fetch = (typeof fetch === 'function') ? fetch : (url, options) => import('node-fetch').then(({ default: f }) => f(url, options));
 
@@ -299,19 +301,28 @@ io.on('connection', (socket) => {
   });
 });
 
-// File upload setup for resumes
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, 'uploads'));
-  },
-  filename: function (req, file, cb) {
-    const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, unique + '-' + file.originalname);
-  }
+// Cloudinary Configuration
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
 });
+
+// Cloudinary Storage Setup for Multer
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'job_portal_uploads',
+    resource_type: 'auto', // Allows both images and PDFs/Docs
+    public_id: (req, file) => {
+      const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
+      return unique + '-' + file.originalname.split('.')[0];
+    },
+  },
+});
+
 const upload = multer({ storage });
 
-// Ensure uploads folder exists
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
@@ -543,7 +554,7 @@ app.post('/api/apply', upload.single('resume'), async (req, res) => {
     const existing = await Application.findOne({ job: jobId, applicant: user._id });
     if (existing) return res.status(400).json({ error: 'Already applied to this job' });
 
-    const resumePath = req.file ? `/uploads/${req.file.filename}` : undefined;
+    const resumePath = req.file ? req.file.path : undefined; // Cloudinary returns the full URL in .path
     const appDoc = new Application({ job: jobId, applicant: user._id, applicantName, age, address, contactNo, email, resumePath });
     await appDoc.save();
     res.status(201).json({ message: 'Application submitted' });
@@ -749,15 +760,11 @@ app.delete('/api/messages/:messageId', async (req, res) => {
       return res.status(403).json({ error: 'You can only delete your own messages' });
     }
 
-    // If the message was a file, delete it from the filesystem
-    if (message.fileUrl) {
-      // Remove leading slash from fileUrl to correctly join with __dirname
-      const filePath = path.join(__dirname, message.fileUrl.startsWith('/') ? message.fileUrl.substring(1) : message.fileUrl);
-      if (fs.existsSync(filePath)) {
-        fs.unlink(filePath, (err) => {
-          if (err) console.error(`Failed to delete file: ${filePath}`, err);
-        });
-      }
+    // If the message was a file, delete it from Cloudinary
+    if (message.filePublicId) {
+      await cloudinary.uploader.destroy(message.filePublicId).catch(err => {
+        console.error("Cloudinary delete failed:", err);
+      });
     }
 
     await Message.findByIdAndDelete(messageId);
@@ -790,9 +797,10 @@ app.post('/api/chats/:chatId/messages', upload.single('file'), async (req, res) 
 
     const messageData = { chat: chatId, sender: user._id, content: content || '' };
     if (req.file) {
-      messageData.fileUrl = `/uploads/${req.file.filename}`;
+      messageData.fileUrl = req.file.path; // Cloudinary returns the full URL in .path
       messageData.fileName = req.file.originalname;
       messageData.fileType = req.file.mimetype;
+      messageData.filePublicId = req.file.filename; // Store public_id for later deletion
     }
 
     const msg = await Message.create(messageData);
