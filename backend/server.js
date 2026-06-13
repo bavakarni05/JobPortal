@@ -28,14 +28,10 @@ const bcrypt = require('bcrypt');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: 'https://astonishing-gingersnap-8324c3.netlify.app' }
+  cors: { origin: 'https://astonishing-gingersnap-8324c3.netlify.app', methods: ["GET", "POST"] }
 });
 
 const userSocketMap = new Map();
-
-// Middleware - moved to top to parse request bodies
-app.use(bodyParser.json());
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // CORS Middleware for REST API
 app.use((req, res, next) => {
@@ -47,6 +43,10 @@ app.use((req, res, next) => {
   }
   next();
 });
+
+// Middleware
+app.use(bodyParser.json());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Current user info
 app.get('/api/me', async (req, res) => {
