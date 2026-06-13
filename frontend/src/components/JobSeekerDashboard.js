@@ -460,7 +460,7 @@ function JobSeekerDashboard({ onLogout }) {
                     <div key={job._id} className="job-card" style={{ margin: '0 0 16px 0' }}>
                       <div className="job-title">{job.title}</div>
                       <div className="job-meta">{job.company} • {job.location}</div>
- recommendations page                       <div style={{ marginBottom: 12 }}>{job.description}</div>
+                      <div style={{ marginBottom: 12 }}>{job.description}</div>
                       <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
                         <button className="btn-secondary" onClick={() => navigate(`/jobs/${job._id}`)}>{t('view_details')}</button>
                         <button type="button" className="btn-primary" onClick={() => startChatWithProvider(job)}>{t('message')}</button>

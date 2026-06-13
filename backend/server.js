@@ -28,7 +28,7 @@ const bcrypt = require('bcrypt');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: 'https://super-basbousa-35ac99.netlify.app' }
+  cors: { origin: 'https://incandescent-banoffee-383f27.netlify.app' }
 });
 
 const userSocketMap = new Map();
@@ -39,7 +39,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // CORS Middleware for REST API
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'https://super-basbousa-35ac99.netlify.app');
+  res.header('Access-Control-Allow-Origin', 'https://incandescent-banoffee-383f27.netlify.app');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
   if (req.method === 'OPTIONS') {
