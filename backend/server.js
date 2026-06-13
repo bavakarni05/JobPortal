@@ -30,14 +30,14 @@ const bcrypt = require('bcrypt');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: 'https://keen-taffy-3c8fac.netlify.app', methods: ["GET", "POST"] }
+  cors: { origin: 'https://guileless-bubblegum-a5f654.netlify.app', methods: ["GET", "POST"] }
 });
 
 const userSocketMap = new Map();
 
 // CORS Middleware for REST API
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'https://keen-taffy-3c8fac.netlify.app');
+  res.header('Access-Control-Allow-Origin', 'https://guileless-bubblegum-a5f654.netlify.app');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
   if (req.method === 'OPTIONS') {
