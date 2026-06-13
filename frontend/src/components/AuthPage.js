@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../LanguageContext';
 import LanguageSelector from './LanguageSelector';
 
+const BACKEND_URL = 'https://jobportal-5-b3v6.onrender.com';
+
 function AuthPage({ onLogin }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -34,7 +36,7 @@ function AuthPage({ onLogin }) {
     try {
       if (isSignup) {
         // Signup request
-        const res = await fetch('https://jobportal-5-b3v6.onrender.com/api/signup', {
+        const res = await fetch(`${BACKEND_URL}/api/signup`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password, role, profile: role === 'jobseeker' ? { preferredCategories } : {} })
@@ -57,7 +59,7 @@ function AuthPage({ onLogin }) {
   };
 
   const handleLogin = async () => {
-    const res = await fetch('https://jobportal-5-b3v6.onrender.com/api/login', {
+    const res = await fetch(`${BACKEND_URL}/api/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })

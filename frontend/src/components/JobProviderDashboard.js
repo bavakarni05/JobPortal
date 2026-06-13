@@ -280,7 +280,10 @@ function JobProviderDashboard({ onLogout }) {
 
   return (
     <div className="dashboard-container landing" style={{ paddingTop: section === 'home' ? 0 : 80 }}>
-      <div className={`landing-nav ${scrolled ? 'landing-nav--scrolled' : ''} ${!visible ? 'landing-nav--hidden' : ''}`}>
+      <div 
+        className={`landing-nav ${scrolled ? 'landing-nav--scrolled' : ''} ${!visible ? 'landing-nav--hidden' : ''}`}
+        style={isMobile && isMenuOpen ? { overflow: 'visible', zIndex: 1100 } : {}}
+      >
         <div className="landing-nav__inner" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '0 20px' }}>
           <div className="landing-nav__logo" style={{ cursor: 'pointer' }} onClick={() => setSection('home')}>
             <span style={{ fontSize: '1.6rem', fontWeight: 900, background: 'var(--gradient-primary)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>FemConnect</span>
@@ -290,8 +293,9 @@ function JobProviderDashboard({ onLogout }) {
             display: isMobile ? (isMenuOpen ? 'flex' : 'none') : 'flex', 
             flexDirection: isMobile ? 'column' : 'row',
             justifyContent: 'center', 
+            alignItems: 'center',
             gap: '12px', 
-            overflow: 'hidden',
+            overflow: isMobile && isMenuOpen ? 'visible' : 'hidden',
             ...(isMobile && isMenuOpen ? { position: 'absolute', top: '80px', left: 0, right: 0, backgroundColor: 'rgba(20, 20, 20, 0.95)', backdropFilter: 'blur(15px)', padding: '20px', zIndex: 1000, borderBottom: '1px solid var(--border)' } : {})
           }}>
             <button style={{ whiteSpace: 'nowrap', fontSize: '0.9rem' }} className={section === 'home' ? 'active' : ''} onClick={() => { setSection('home'); setIsMenuOpen(false); }}>{t('home')}</button>
