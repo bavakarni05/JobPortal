@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 :root {
   /* Dark Mode Palette */
@@ -23,7 +23,7 @@
   --radius-xl: 20px;
   --radius-full: 9999px;
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  --font-display: 'Outfit', sans-serif;
+  --font-display: 'Inter', system-ui, -apple-system, sans-serif;
   --shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.3);
 }
 
@@ -98,7 +98,9 @@ body {
 .landing-nav__links {
   display: flex;
   align-items: center;
-  gap: 32px;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .landing-nav__links button,

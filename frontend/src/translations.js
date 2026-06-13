@@ -197,7 +197,12 @@ export const translations = {
     no_reviews_yet: 'No reviews yet. Be the first!',
     rating: 'Rating',
     share_experience: 'Share your experience...',
-    login_required: 'Please login to review'
+    login_required: 'Please login to review',
+    edit_profile: 'Edit Profile',
+    phone: 'Phone',
+    email: 'Email',
+    save_changes: 'Save Changes',
+    profile_updated: 'Profile updated successfully!'
   },
   ta: {
     app_title: 'பெண்கள் வேலை வாய்ப்பு தளம்',
@@ -391,7 +396,12 @@ export const translations = {
     no_reviews_yet: 'இதுவரை விமர்சனங்கள் இல்லை. முதலில் நீங்களே விமர்சிக்கவும்!',
     rating: 'தரவரிசை',
     share_experience: 'உங்கள் அனுபவத்தைப் பகிரவும்...',
-    login_required: 'விமர்சனம் செய்ய உள்நுழையவும்'
+    login_required: 'விமர்சனம் செய்ய உள்நுழையவும்',
+    edit_profile: 'சுயவிவரத்தைத் திருத்து',
+    phone: 'தொலைபேசி',
+    email: 'மின்னஞ்சல்',
+    save_changes: 'மாற்றங்களைச் சேமிக்கவும்',
+    profile_updated: 'சுயவிவரம் வெற்றிகரமாக புதுப்பிக்கப்பட்டது!'
   },
   hi: {
     app_title: 'महिला जॉब पोर्टल',
@@ -558,7 +568,12 @@ export const translations = {
     no_reviews_yet: 'अभी तक कोई समीक्षा नहीं। पहले बनें!',
     rating: 'रेटिंग',
     share_experience: 'अपना अनुभव साझा करें...',
-    login_required: 'समीक्षा के लिए कृपया लॉगिन करें'
+    login_required: 'समीक्षा के लिए कृपया लॉगिन करें',
+    edit_profile: 'प्रोफ़ाइल संपादित करें',
+    phone: 'फ़ोन',
+    email: 'ईमेल',
+    save_changes: 'परिवर्तन सहेजें',
+    profile_updated: 'प्रोफ़ाइल सफलतापूर्वक अपडेट हो गई!'
   },
   te: {
     app_title: 'మహిళల ఉద్యోగ పోర్టల్',
@@ -725,6 +740,11 @@ export const translations = {
     no_reviews_yet: 'ఇంకా సమీక్షలు లేవు. మొదట మీరే ఇవ్వండి!',
     rating: 'రేటింగ్',
     share_experience: 'మీ అనుభవాన్ని పంచుకోండి...',
-    login_required: 'సమీక్షించడానికి దయచేసి లాగిన్ అవ్వండి'
+    login_required: 'సమీక్షించడానికి దయచేసి లాగిన్ అవ్వండి',
+    edit_profile: 'ప్రొఫైల్‌ని సవరించండి',
+    phone: 'ఫోన్',
+    email: 'ఈమెయిల్',
+    save_changes: 'మార్పులను సేవ్ చేయండి',
+    profile_updated: 'ప్రొఫైల్ విజయవంతంగా నవీకరించబడింది!'
   }
 }; 

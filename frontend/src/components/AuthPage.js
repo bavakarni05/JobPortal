@@ -114,21 +114,26 @@ function AuthPage({ onLogin }) {
           )}
           {isSignup && role === 'jobseeker' && (
             <div>
-              <label className="label">{t('preferred_categories') || 'Preferred Categories'}</label>
-              <select
-                className="select"
-                multiple
-                value={preferredCategories}
-                onChange={(e) => {
-                  const opts = Array.from(e.target.selectedOptions).map(o => o.value);
-                  setPreferredCategories(opts);
-                }}
-                style={{ height: 100 }}
-              >
+              <label className="label" style={{ marginBottom: 12 }}>{t('preferred_categories')}</label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                 {['IT', 'Food', 'Medical', 'Education', 'Retail', 'Construction', 'Other'].map(cat => (
-                  <option key={cat} value={cat}>{t(cat.toLowerCase()) || cat}</option>
+                  <label key={cat} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                    <input
+                      type="checkbox"
+                      value={cat}
+                      checked={preferredCategories.includes(cat)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const next = e.target.checked
+                          ? [...preferredCategories, val]
+                          : preferredCategories.filter(c => c !== val);
+                        setPreferredCategories(next);
+                      }}
+                    />
+                    {t(cat.toLowerCase()) || cat}
+                  </label>
                 ))}
-              </select>
+              </div>
               <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>{t('hold_ctrl_to_select_multiple') || 'Hold Ctrl/Cmd to select multiple'}</div>
             </div>
           )}

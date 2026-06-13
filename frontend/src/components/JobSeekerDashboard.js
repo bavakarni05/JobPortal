@@ -334,7 +334,7 @@ function JobSeekerDashboard({ onLogout }) {
           <div className="landing-nav__logo" style={{ cursor: 'pointer' }} onClick={() => setSection('home')}>
             <span style={{ fontSize: '1.6rem', fontWeight: 900, background: 'var(--gradient-primary)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>FemConnect</span>
           </div>
-          <div className="landing-nav__links" style={{ overflowX: 'auto', whiteSpace: 'nowrap', display: 'flex', justifyContent: isMobile ? 'flex-start' : 'center', flex: 1 }}>
+          <div className="landing-nav__links" style={{ flex: 1 }}>
           <button className={section === 'home' ? 'active' : ''} onClick={() => setSection('home')}>{t('home')}</button>
           <button className={section === 'view' ? 'active' : ''} onClick={() => setSection('view')}>{t('view_jobs')}</button>
           <button className={section === 'applications' ? 'active' : ''} onClick={() => setSection('applications')}>{t('my_applications')}</button>
@@ -416,26 +416,31 @@ function JobSeekerDashboard({ onLogout }) {
                   <input className="input" value={profileForm.phone} onChange={e => setProfileForm({ ...profileForm, phone: e.target.value })} placeholder="Phone Number" />
                 </div>
                 <div className="full">
-                  <label className="label">{t('preferred_categories') || 'Preferred Job Categories'}</label>
-                  <select
-                    className="select"
-                    multiple
-                    value={profileForm.preferredCategories}
-                    onChange={(e) => {
-                      const opts = Array.from(e.target.selectedOptions).map(o => o.value);
-                      setProfileForm({ ...profileForm, preferredCategories: opts });
-                    }}
-                    style={{ height: 120 }}
-                  >
-                  {['IT', 'Food', 'Medical', 'Education', 'Retail', 'Construction', 'Other'].map(cat => (
-                    <option key={cat} value={cat}>{t(cat.toLowerCase()) || cat}</option>
+                  <label className="label" style={{ marginBottom: 12 }}>{t('preferred_categories')}</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '10px' }}>
+                    {['IT', 'Food', 'Medical', 'Education', 'Retail', 'Construction', 'Other'].map(cat => (
+                      <label key={cat} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                        <input
+                          type="checkbox"
+                          value={cat}
+                          checked={profileForm.preferredCategories.includes(cat)}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const next = e.target.checked
+                              ? [...profileForm.preferredCategories, val]
+                              : profileForm.preferredCategories.filter(c => c !== val);
+                            setProfileForm({ ...profileForm, preferredCategories: next });
+                          }}
+                        />
+                        {t(cat.toLowerCase()) || cat}
+                      </label>
                     ))}
-                  </select>
+                  </div>
                   <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>{t('hold_ctrl_to_select_multiple') || 'Hold Ctrl/Cmd to select multiple'}</div>
                 </div>
               </div>
               <div className="modal-actions">
-                <button type="submit" className="btn-primary">{t('save_changes') || 'Save Changes'}</button>
+                <button type="submit" className="btn-primary">{t('save_changes')}</button>
               </div>
             </form>
           )}
