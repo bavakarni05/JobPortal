@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../LanguageContext';
+import LanguageSelector from './LanguageSelector';
 
 function AuthPage({ onLogin }) {
   const [username, setUsername] = useState('');
@@ -10,6 +11,21 @@ function AuthPage({ onLogin }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { t } = useLanguage();
+  const [scrolled, setScrolled] = useState(false);
+  const [visible, setVisible] = useState(true);
+  const [prevScrollPos, setPrevScrollPos] = useState(window.pageYOffset);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollPos = window.pageYOffset;
+      setVisible(prevScrollPos > currentScrollPos || currentScrollPos < 10);
+      setPrevScrollPos(currentScrollPos);
+      setScrolled(currentScrollPos > 20);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [prevScrollPos]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -57,7 +73,18 @@ function AuthPage({ onLogin }) {
   };
 
   return (
-    <div className="auth-container landing">
+    <div className="auth-container landing" style={{ paddingTop: 80 }}>
+      <div className={`landing-nav ${scrolled ? 'landing-nav--scrolled' : ''} ${!visible ? 'landing-nav--hidden' : ''}`}>
+        <div className="landing-nav__inner">
+          <div className="landing-nav__logo">
+            <span style={{ fontSize: '1.6rem', fontWeight: 900, background: 'var(--gradient-primary)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>FemConnect</span>
+          </div>
+          <div className="header-right">
+            <LanguageSelector />
+          </div>
+        </div>
+      </div>
+
       <div className="hero__bg">
         <div className="hero__orb hero__orb--1" />
         <div className="hero__orb hero__orb--2" />
@@ -99,7 +126,7 @@ function AuthPage({ onLogin }) {
                 style={{ height: 100 }}
               >
                 {['IT', 'Food', 'Medical', 'Education', 'Retail', 'Construction', 'Other'].map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
+                  <option key={cat} value={cat}>{t(cat.toLowerCase()) || cat}</option>
                 ))}
               </select>
               <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>{t('hold_ctrl_to_select_multiple') || 'Hold Ctrl/Cmd to select multiple'}</div>
