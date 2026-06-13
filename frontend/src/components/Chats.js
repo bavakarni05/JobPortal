@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import { useLanguage } from '../LanguageContext';
 
-const socket = io('https://jobportal-3-trrm.onrender.com');
+const BACKEND_URL = 'https://jobportal-3-trrm.onrender.com';
+const socket = io(BACKEND_URL);
 
 function Chats({ initialChatId }) {
   const { t } = useLanguage();
@@ -242,7 +243,7 @@ function Chats({ initialChatId }) {
                           {m.content}
                           {m.fileUrl && (
                             <div style={{ marginTop: '5px', background: 'rgba(0,0,0,0.2)', padding: '5px', borderRadius: '4px' }}>
-                                <a href={m.fileUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>📄 {m.fileName || 'Attachment'}</a>
+                                <a href={m.fileUrl.startsWith('http') ? m.fileUrl : `${BACKEND_URL}${m.fileUrl.startsWith('/') ? '' : '/'}${m.fileUrl}`} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>📄 {m.fileName || 'Attachment'}</a>
                             </div>
                           )}
                           <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '5px', marginTop: '5px', fontSize: '0.7rem', opacity: 0.8 }}>

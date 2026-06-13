@@ -6,6 +6,8 @@ import InterviewScheduler from './InterviewScheduler';
 import InterviewList from './InterviewList';
 import LanguageSelector from './LanguageSelector';
 
+const BACKEND_URL = 'https://jobportal-3-trrm.onrender.com';
+
 function JobProviderDashboard({ onLogout }) {
   const [jobs, setJobs] = useState([]);
   const [allJobs, setAllJobs] = useState([]); // unfiltered source
@@ -534,7 +536,7 @@ function JobProviderDashboard({ onLogout }) {
             </div>
             {activeApp.resumePath && (
               <div style={{ marginTop: 24 }}>
-                <a href={activeApp.resumePath} target="_blank" rel="noreferrer" className="btn-secondary">{t('view_resume')}</a>
+                <a href={activeApp.resumePath.startsWith('http') ? activeApp.resumePath : `${BACKEND_URL}${activeApp.resumePath}`} target="_blank" rel="noreferrer" className="btn-secondary">{t('view_resume')}</a>
               </div>
             )}
             <div className="modal-actions">

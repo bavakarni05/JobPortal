@@ -28,7 +28,7 @@ const bcrypt = require('bcrypt');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: 'https://vermillion-praline-a8cc6e.netlify.app' }
+  cors: { origin: 'https://thunderous-biscochitos-9e41d0.netlify.app' }
 });
 
 const userSocketMap = new Map();
@@ -39,7 +39,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // CORS Middleware for REST API
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'https://vermillion-praline-a8cc6e.netlify.app');
+  res.header('Access-Control-Allow-Origin', 'https://thunderous-biscochitos-9e41d0.netlify.app');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
   if (req.method === 'OPTIONS') {
@@ -751,7 +751,8 @@ app.delete('/api/messages/:messageId', async (req, res) => {
 
     // If the message was a file, delete it from the filesystem
     if (message.fileUrl) {
-      const filePath = path.join(__dirname, message.fileUrl);
+      // Remove leading slash from fileUrl to correctly join with __dirname
+      const filePath = path.join(__dirname, message.fileUrl.startsWith('/') ? message.fileUrl.substring(1) : message.fileUrl);
       if (fs.existsSync(filePath)) {
         fs.unlink(filePath, (err) => {
           if (err) console.error(`Failed to delete file: ${filePath}`, err);

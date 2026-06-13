@@ -6,6 +6,8 @@ import womenImage from '../women1.jpg';
 import InterviewList from './InterviewList';
 import LanguageSelector from './LanguageSelector';
 
+const BACKEND_URL = 'https://jobportal-3-trrm.onrender.com';
+
 function JobSeekerDashboard({ onLogout }) {
   const [section, setSection] = useState('home'); // home | view | applications | chats | recommendations | profile | interviews
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -685,7 +687,7 @@ function JobSeekerDashboard({ onLogout }) {
                 <div className="full">
                   <label className="label">{t('resume_file')}</label>
                   <div style={{ marginTop: 8 }}>
-                    <a href={selectedApplication.resumePath} target="_blank" rel="noreferrer" className="btn-secondary">
+                    <a href={selectedApplication.resumePath.startsWith('http') ? selectedApplication.resumePath : `${BACKEND_URL}${selectedApplication.resumePath}`} target="_blank" rel="noreferrer" className="btn-secondary">
                       {t('view_resume')}
                     </a>
                   </div>
