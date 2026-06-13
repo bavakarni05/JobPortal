@@ -4,6 +4,7 @@ import Chats from './Chats';
 import { useLanguage } from '../LanguageContext';
 import womenImage from '../women1.jpg';
 import InterviewList from './InterviewList';
+import LanguageSelector from './LanguageSelector';
 
 function JobSeekerDashboard({ onLogout }) {
   const [section, setSection] = useState('home'); // home | view | applications | chats | recommendations | profile | interviews
@@ -33,10 +34,18 @@ function JobSeekerDashboard({ onLogout }) {
   const [profileLoading, setProfileLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [scrolled, setScrolled] = useState(false);
+  const [visible, setVisible] = useState(true);
+  const [prevScrollPos, setPrevScrollPos] = useState(window.pageYOffset);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
-    const handleScroll = () => setScrolled(window.scrollY > 20);
+    const handleScroll = () => {
+      const currentScrollPos = window.pageYOffset;
+      setVisible(prevScrollPos > currentScrollPos || currentScrollPos < 10);
+      setPrevScrollPos(currentScrollPos);
+      setScrolled(currentScrollPos > 20);
+    };
+
     window.addEventListener('resize', handleResize);
     window.addEventListener('scroll', handleScroll);
     return () => {
@@ -319,12 +328,11 @@ function JobSeekerDashboard({ onLogout }) {
   };
 
   return (
-    <div className="dashboard-container landing">
-      <div className={`landing-nav ${scrolled ? 'landing-nav--scrolled' : ''}`}>
+    <div className="dashboard-container landing" style={{ paddingTop: section === 'home' ? 0 : 80 }}>
+      <div className={`landing-nav ${scrolled ? 'landing-nav--scrolled' : ''} ${!visible ? 'landing-nav--hidden' : ''}`}>
         <div className="landing-nav__inner">
           <div className="landing-nav__logo" style={{ cursor: 'pointer' }} onClick={() => setSection('home')}>
-            <div className="landing-nav__logo-icon">JS</div>
-            {t('app_title')}
+            <span style={{ fontSize: '1.6rem', fontWeight: 900, background: 'var(--gradient-primary)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>FemConnect</span>
           </div>
           <div className="landing-nav__links" style={{ overflowX: 'auto', whiteSpace: 'nowrap', display: 'flex', justifyContent: isMobile ? 'flex-start' : 'center', flex: 1 }}>
           <button className={section === 'home' ? 'active' : ''} onClick={() => setSection('home')}>{t('home')}</button>
@@ -376,7 +384,6 @@ function JobSeekerDashboard({ onLogout }) {
           </div>
           <div className="header-profile" onClick={() => setShowProfileMenu(v => !v)}>
             <div className="profile-icon">{username[0]?.toUpperCase() || 'JS'}</div>
-            <span className="profile-name">{username}</span>
             {showProfileMenu && (
               <div className="profile-menu">
                 <div className="profile-menu-header">{username}</div>
@@ -385,6 +392,7 @@ function JobSeekerDashboard({ onLogout }) {
               </div>
             )}
           </div>
+          <LanguageSelector />
         </div>
       </div>
     </div>
@@ -419,8 +427,8 @@ function JobSeekerDashboard({ onLogout }) {
                     }}
                     style={{ height: 120 }}
                   >
-                    {['IT', 'Food', 'Medical', 'Education', 'Retail', 'Construction', 'Other'].map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
+                  {['IT', 'Food', 'Medical', 'Education', 'Retail', 'Construction', 'Other'].map(cat => (
+                    <option key={cat} value={cat}>{t(cat.toLowerCase()) || cat}</option>
                     ))}
                   </select>
                   <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>{t('hold_ctrl_to_select_multiple') || 'Hold Ctrl/Cmd to select multiple'}</div>
@@ -452,7 +460,7 @@ function JobSeekerDashboard({ onLogout }) {
                     <div key={job._id} className="job-card" style={{ margin: '0 0 16px 0' }}>
                       <div className="job-title">{job.title}</div>
                       <div className="job-meta">{job.company} • {job.location}</div>
-                      <div style={{ marginBottom: 12 }}>{job.description}</div>
+ recommendations page                       <div style={{ marginBottom: 12 }}>{job.description}</div>
                       <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
                         <button className="btn-secondary" onClick={() => navigate(`/jobs/${job._id}`)}>{t('view_details')}</button>
                         <button type="button" className="btn-primary" onClick={() => startChatWithProvider(job)}>{t('message')}</button>
@@ -479,14 +487,6 @@ function JobSeekerDashboard({ onLogout }) {
                 <span>{t('discover')}</span>
               </h1>
               <p className="hero__subtitle">{t('empower_women')}</p>
-              <div className="hero__actions">
-                <button className="btn-primary" onClick={() => setSection('view')}>
-                  {t('view_jobs')}
-                </button>
-                <button className="btn-secondary" onClick={() => setSection('applications')}>
-                  {t('my_applications')}
-                </button>
-              </div>
             </div>
             <div className="hero__visual">
               <img src={womenImage} alt="Women empowerment" className="hero__image-main" />

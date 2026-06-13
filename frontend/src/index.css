@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
 :root {
   /* Dark Mode Palette */
   --bg-deep: #0f0f1a;
@@ -21,7 +23,7 @@
   --radius-xl: 20px;
   --radius-full: 9999px;
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  --font-display: 'Inter', system-ui, sans-serif;
+  --font-display: 'Outfit', sans-serif;
   --shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.3);
 }
 
@@ -48,6 +50,10 @@ body {
   z-index: 1000; /* Increased z-index for fixed nav */
   padding: 16px 0;
   transition: var(--transition);
+}
+
+.landing-nav--hidden {
+  transform: translateY(-100%);
 }
 
 .landing-nav--scrolled {
@@ -206,11 +212,36 @@ body {
 }
 
 .hero__image-main {
-  width: 100%;
+  width: 110%;
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 30px 60px rgba(0,0,0,0.6);
   border: 1px solid var(--border);
   object-fit: cover;
+  transform: perspective(1000px) rotateY(-10deg) rotateX(5deg) scale(1.05);
+  transition: var(--transition);
+  mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+}
+
+.hero__image-main:hover {
+  transform: perspective(1000px) rotateY(0deg) rotateX(0deg) scale(1.1);
+}
+
+.hero__visual {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.hero__visual::after {
+  content: '';
+  position: absolute;
+  width: 120%;
+  height: 120%;
+  background: var(--gradient-primary);
+  filter: blur(120px);
+  opacity: 0.15;
+  z-index: -1;
 }
 
 .feature-card {
@@ -249,6 +280,7 @@ body {
   font-weight: 600;
   cursor: pointer;
   transition: var(--transition);
+  margin: 4px;
   text-decoration: none; /* For anchor buttons */
   backdrop-filter: blur(10px);
 }
@@ -493,6 +525,7 @@ body {
 .header-right {
   display: flex;
   align-items: center;
+  gap: 16px;
 }
 
 .error {

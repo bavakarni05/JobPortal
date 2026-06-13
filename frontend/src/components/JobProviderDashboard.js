@@ -4,6 +4,7 @@ import { useLanguage } from '../LanguageContext';
 import womenImage from '../women1.jpg';
 import InterviewScheduler from './InterviewScheduler';
 import InterviewList from './InterviewList';
+import LanguageSelector from './LanguageSelector';
 
 function JobProviderDashboard({ onLogout }) {
   const [jobs, setJobs] = useState([]);
@@ -30,11 +31,19 @@ function JobProviderDashboard({ onLogout }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-  const [scrolled, setScrolled] = useState(false);
+  co onst [scrolled, setScrolled] = useState(false);
+  const [visible, setVisible] = useState(true);
+  const [prevScrollPos, setPrevScrollPos] = useState(window.pageYOffset);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
-    const handleScroll = () => setScrolled(window.scrollY > 20);
+    const handleScroll = () => {
+      const currentScrollPos = window.pageYOffset;
+      setVisible(prevScrollPos > currentScrollPos || currentScrollPos < 10);
+      setPrevScrollPos(currentScrollPos);
+      setScrolled(currentScrollPos > 20);
+    };
+
     window.addEventListener('resize', handleResize);
     window.addEventListener('scroll', handleScroll);
     return () => {
@@ -267,12 +276,11 @@ function JobProviderDashboard({ onLogout }) {
   };
 
   return (
-    <div className="dashboard-container landing">
-      <div className={`landing-nav ${scrolled ? 'landing-nav--scrolled' : ''}`}>
+    <div className="dashboard-container landing" style={{ paddingTop: section === 'home' ? 0 : 80 }}>
+      <div className={`landing-nav ${scrolled ? 'landing-nav--scrolled' : ''} ${!visible ? 'landing-nav--hidden' : ''}`}>
         <div className="landing-nav__inner">
           <div className="landing-nav__logo" style={{ cursor: 'pointer' }} onClick={() => setSection('home')}>
-            <div className="landing-nav__logo-icon">JP</div>
-            {t('app_title')}
+            <span style={{ fontSize: '1.6rem', fontWeight: 900, background: 'var(--gradient-primary)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>FemConnect</span>
           </div>
           <div className="landing-nav__links" style={{ overflowX: 'auto', whiteSpace: 'nowrap', display: 'flex', justifyContent: isMobile ? 'flex-start' : 'center', flex: 1 }}>
           <button className={section === 'home' ? 'active' : ''} onClick={() => setSection('home')}>{t('home')}</button>
@@ -321,7 +329,6 @@ function JobProviderDashboard({ onLogout }) {
           </div>
           <div className="header-profile" onClick={() => setShowProfileMenu(v => !v)}>
             <div className="profile-icon">{username[0]?.toUpperCase() || 'JP'}</div>
-            <span className="profile-name">{username}</span>
             {showProfileMenu && (
               <div className="profile-menu">
                 <div className="profile-menu-header">{username}</div>
@@ -329,6 +336,7 @@ function JobProviderDashboard({ onLogout }) {
               </div>
             )}
           </div>
+          <LanguageSelector />
         </div>
       </div>
     </div>
@@ -346,14 +354,6 @@ function JobProviderDashboard({ onLogout }) {
                 <span>{t('empower_women')}</span>
               </h1>
               <p className="hero__subtitle">{t('discover')}</p>
-              <div className="hero__actions">
-                <button className="btn-primary" onClick={() => setSection('add')}>
-                  {t('add_job')}
-                </button>
-                <button className="btn-secondary" onClick={() => setSection('view')}>
-                  {t('my_jobs')}
-                </button>
-              </div>
             </div>
             <div className="hero__visual">
               <img src={womenImage} alt="Hero" className="hero__image-main" />

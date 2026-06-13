@@ -7,7 +7,6 @@ import JobDetails from './components/JobDetails';
 import './App.css';
 import './overrides.css';
 import { LanguageProvider } from './LanguageContext';
-import LanguageSelector from './components/LanguageSelector';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -27,7 +26,6 @@ function App() {
   return (
     <LanguageProvider>
       <Router>
-        <LanguageSelector />
         <Routes>
           <Route path="/" element={!isLoggedIn ? <AuthPage onLogin={handleLogin} /> : (role === 'jobseeker' ? <JobSeekerDashboard onLogout={handleLogout} /> : <JobProviderDashboard onLogout={handleLogout} />)} />
           <Route path="/seeker" element={<JobSeekerDashboard onLogout={handleLogout} />} />
