@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import { useLanguage } from '../LanguageContext';
 
-
 const socket = io('https://jobportal-3-trrm.onrender.com');
 
 function Chats({ initialChatId }) {
@@ -79,6 +78,19 @@ function Chats({ initialChatId }) {
     // auto scroll to bottom
     try { bodyRef.current && (bodyRef.current.scrollTop = bodyRef.current.scrollHeight); } catch {}
   }, [messages, activeChat]);
+
+  useEffect(() => {
+    fetchChats();
+    // eslint-disable-next-line
+  }, []);
+
+  useEffect(() => {
+    if (!initialChatId) return;
+    if (chats.length === 0) return; // will re-run when chats load
+    const chat = chats.find(c => c._id === initialChatId);
+    if (chat) openChat(chat);
+    // eslint-disable-next-line
+  }, [initialChatId, chats]);
 
   const fetchChats = async () => {
     const res = await fetch(`https://jobportal-3-trrm.onrender.com/api/chats?username=${username}`);
@@ -170,22 +182,22 @@ function Chats({ initialChatId }) {
   }, [search, chats, username]);
 
   return (
-    <div className="chat-container" style={{ display: 'flex', height: '85vh', width: '95%', margin: '20px auto', border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#f9f9f9', flexDirection: isMobile ? 'column' : 'row' }}>
+    <div className="chat-container feature-card" style={{ display: 'flex', height: '80vh', width: '95%', margin: '20px auto', overflow: 'hidden', padding: 0, flexDirection: isMobile ? 'column' : 'row' }}>
       {(!isMobile || !activeChat) && (
-      <div className="chat-sidebar" style={{ width: isMobile ? '100%' : '300px', borderRight: isMobile ? 'none' : '1px solid #ddd', display: 'flex', flexDirection: 'column', backgroundColor: '#fff', height: isMobile ? '100%' : 'auto' }}>
-        <div className="chat-search" style={{ padding: '10px', borderBottom: '1px solid #eee' }}>
-          <input placeholder={t('search_jobs')} value={search} onChange={e => setSearch(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: '20px', border: '1px solid #ccc', outline: 'none', boxSizing: 'border-box' }} />
+      <div className="chat-sidebar" style={{ width: isMobile ? '100%' : '300px', borderRight: isMobile ? 'none' : '1px solid var(--border)', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-card)', height: isMobile ? '100%' : 'auto' }}>
+        <div className="chat-search" style={{ padding: '15px', borderBottom: '1px solid var(--border)' }}>
+          <input className="input" placeholder={t('search_jobs')} value={search} onChange={e => setSearch(e.target.value)} style={{ borderRadius: 'var(--radius-full)' }} />
         </div>
         <ul className="chat-list" style={{ listStyle: 'none', padding: 0, margin: 0, overflowY: 'auto', flex: 1 }}>
           {filtered.map(c => {
             const other = c.participants?.find(p => p.username !== username)?.username || t('unknown_user');
             const time = c.lastMessageAt ? new Date(c.lastMessageAt).toLocaleTimeString() : '';
             return (
-              <li key={c._id} className={`chat-item ${activeChat?._id === c._id ? 'active' : ''}`} onClick={() => openChat(c)} style={{ display: 'flex', alignItems: 'center', padding: '15px', cursor: 'pointer', borderBottom: '1px solid #f0f0f0', backgroundColor: activeChat?._id === c._id ? '#e6f0ff' : 'transparent' }}>
-                <div className="avatar" style={{ width: '45px', height: '45px', borderRadius: '50%', backgroundColor: '#007bff', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', marginRight: '15px', flexShrink: 0 }}>{other[0]?.toUpperCase() || '?'}</div>
+              <li key={c._id} className={`chat-item ${activeChat?._id === c._id ? 'active' : ''}`} onClick={() => openChat(c)} style={{ display: 'flex', alignItems: 'center', padding: '15px', cursor: 'pointer', borderBottom: '1px solid var(--border)', backgroundColor: activeChat?._id === c._id ? 'rgba(99, 102, 241, 0.1)' : 'transparent', transition: 'var(--transition)' }}>
+                <div className="avatar" style={{ width: '45px', height: '45px', borderRadius: '50%', background: 'var(--gradient-primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', marginRight: '15px', flexShrink: 0 }}>{other[0]?.toUpperCase() || 'U'}</div>
                 <div className="chat-meta" style={{ overflow: 'hidden', flex: 1 }}>
-                  <span className="chat-name" style={{ fontWeight: 600, display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#333' }}>{other} {time && <small style={{ marginLeft: '6px', color: '#6b7280', fontWeight: 'normal', fontSize: '0.8em' }}>{time}</small>}</span>
-                  <span className="chat-sub" style={{ fontSize: '0.85rem', color: '#888', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>{c.job?.title}</span>
+                  <span className="chat-name" style={{ fontWeight: 600, display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--text-primary)' }}>{other} {time && <small style={{ marginLeft: '6px', color: 'var(--text-muted)', fontWeight: 'normal' }}>{time}</small>}</span>
+                  <span className="chat-sub" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>{c.job?.title}</span>
                 </div>
               </li>
             );
@@ -193,35 +205,35 @@ function Chats({ initialChatId }) {
         </ul>
       </div>
       )}
-      {(!isMobile || activeChat) && (
-      <div className="chat-main" style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#fff', height: isMobile ? '100%' : 'auto' }}>
+      {(!isMobile || activeChat) && ( /* Main chat window */
+      <div className="chat-main" style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-deep)', height: isMobile ? '100%' : 'auto' }}>
         {activeChat ? (
           <>
-            <div className="chat-header" style={{ padding: '15px 20px', borderBottom: '1px solid #ddd', display: 'flex', alignItems: 'center', backgroundColor: 'white', boxShadow: '0 2px 5px rgba(0,0,0,0.05)', zIndex: 10 }}>
-              {isMobile && <button onClick={() => setActiveChat(null)} style={{ marginRight: 10, background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', padding: '0 5px' }}>←</button>}
-              <div className="avatar" style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#007bff', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', marginRight: '15px' }}>{(activeChat.participants?.find(p => p.username !== username)?.username || '?')[0]?.toUpperCase() || '?'}</div>
+            <div className="chat-header" style={{ padding: '15px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', backgroundColor: 'var(--bg-card)', zIndex: 10 }}>
+              {isMobile && <button onClick={() => setActiveChat(null)} style={{ marginRight: 10, background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', padding: '0 5px', color: 'white' }}>←</button>}
+              <div className="avatar" style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--gradient-primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', marginRight: '15px' }}>{(activeChat.participants?.find(p => p.username !== username)?.username || 'U')[0]?.toUpperCase() || 'U'}</div>
               <div>
                 <div className="chat-title" style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{activeChat.participants?.find(p => p.username !== username)?.username || t('unknown_user')}</div>
-                <div className="chat-subtitle" style={{ fontSize: '0.85rem', color: '#666' }}>{isTyping ? t('typing') : (activeChat.job?.title || '')}</div>
+                <div className="chat-subtitle" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{isTyping ? t('typing') : (activeChat.job?.title || '')}</div>
               </div>
             </div>
-            <div className="chat-body" ref={bodyRef} style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '15px', backgroundColor: '#f5f7fb' }}>
+            <div className="chat-body" ref={bodyRef} style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '15px', background: 'var(--bg-deep)' }}>
               {messages.map(m => {
                 const isOwn = m.sender?.username === username;
                 return (
                   <div key={m._id} className={`msg ${isOwn ? 'me' : 'them'}`} style={{ display: 'flex', flexDirection: 'column', alignItems: isOwn ? 'flex-end' : 'flex-start', maxWidth: '70%', alignSelf: isOwn ? 'flex-end' : 'flex-start' }}>
-                    <div style={{ padding: '12px 16px', borderRadius: '12px', position: 'relative', boxShadow: '0 1px 2px rgba(0,0,0,0.1)', wordWrap: 'break-word', backgroundColor: isOwn ? '#007bff' : '#fff', color: isOwn ? 'white' : '#333', border: isOwn ? 'none' : '1px solid #eee', borderBottomRightRadius: isOwn ? '2px' : '12px', borderBottomLeftRadius: isOwn ? '12px' : '2px' }}>
+                    <div style={{ padding: '12px 16px', borderRadius: '12px', position: 'relative', wordWrap: 'break-word', backgroundColor: isOwn ? 'var(--primary)' : 'var(--bg-card)', color: 'white', border: '1px solid var(--border)', borderBottomRightRadius: isOwn ? '2px' : '12px', borderBottomLeftRadius: isOwn ? '12px' : '2px', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
                     {editingMessageId === m._id ? (
                       <div style={{ minWidth: '200px' }}>
                         <textarea 
                           value={editContent}
                           onChange={(e) => setEditContent(e.target.value)}
-                          style={{ width: '100%', boxSizing: 'border-box', padding: '5px', borderRadius: '4px', border: '1px solid #ccc', color: '#333' }}
+                          className="textarea" style={{ padding: '5px', borderRadius: '4px', background: 'rgba(0,0,0,0.2)' }}
                           autoFocus
                         />
                         <div style={{ textAlign: 'right', marginTop: '5px', display: 'flex', gap: '5px', justifyContent: 'flex-end' }}>
-                          <button onClick={() => handleSaveEdit(m._id)} style={{ padding: '4px 8px', fontSize: '0.8rem', cursor: 'pointer', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px' }}>{t('save')}</button>
-                          <button onClick={() => setEditingMessageId(null)} style={{ padding: '4px 8px', fontSize: '0.8rem', cursor: 'pointer', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px' }}>{t('cancel')}</button>
+                          <button onClick={() => handleSaveEdit(m._id)} className="btn-primary" style={{ padding: '4px 8px', fontSize: '0.8rem' }}>{t('save')}</button>
+                          <button onClick={() => setEditingMessageId(null)} className="btn-secondary" style={{ padding: '4px 8px', fontSize: '0.8rem', backgroundColor: '#dc3545', borderColor: '#dc3545' }}>{t('cancel')}</button>
                         </div>
                       </div>
                     ) : (
@@ -229,7 +241,7 @@ function Chats({ initialChatId }) {
                         <div style={{ fontSize: '0.95rem', lineHeight: 1.4 }}>
                           {m.content}
                           {m.fileUrl && (
-                            <div style={{ marginTop: '5px', background: 'rgba(0,0,0,0.1)', padding: '5px', borderRadius: '4px' }}>
+                            <div style={{ marginTop: '5px', background: 'rgba(0,0,0,0.2)', padding: '5px', borderRadius: '4px' }}>
                                 <a href={m.fileUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>📄 {m.fileName || 'Attachment'}</a>
                             </div>
                           )}
@@ -241,22 +253,22 @@ function Chats({ initialChatId }) {
                       </>
                     )}
                     </div>
-                    {isOwn && editingMessageId !== m._id && (
-                        <div className="message-actions" style={{ display: 'flex', gap: '5px', marginTop: '2px' }}>
-                        <button onClick={() => handleEditClick(m)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', padding: '2px' }} title="Edit">✏️</button>
-                        <button onClick={() => handleDelete(m._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', padding: '2px' }} title="Delete">🗑️</button>
+                    {isOwn && editingMessageId !== m._id && ( /* Message actions */
+                        <div className="message-actions" style={{ display: 'flex', gap: '5px', marginTop: '2px', opacity: 0.8 }}>
+                        <button onClick={() => handleEditClick(m)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem', padding: '2px', color: 'var(--text-secondary)' }} title="Edit">✏️</button>
+                        <button onClick={() => handleDelete(m._id)} style={{ background: 'none', border: 'none', 'border': 'none', cursor: 'pointer', fontSize: '0.9rem', padding: '2px', color: 'var(--text-secondary)' }} title="Delete">🗑️</button>
                         </div>
                     )}
                   </div>
                 );
               })}
             </div>
-            <div className="chat-input" style={{ padding: '15px 20px', backgroundColor: 'white', borderTop: '1px solid #ddd', display: 'flex', alignItems: 'flex-end', gap: '10px' }}>
-              <button type="button" className="attach-btn" onClick={() => fileInputRef.current.click()} title="Attach File" style={{ padding: 0, width: '40px', height: '40px', border: 'none', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f0f0f0', fontSize: '1.2rem' }}>📎</button>
+            <div className="chat-input" style={{ padding: '15px 20px', backgroundColor: 'var(--bg-card)', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'flex-end', gap: '10px' }}>
+              <button type="button" className="attach-btn btn-secondary" onClick={() => fileInputRef.current.click()} title="Attach File" style={{ padding: 0, width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>📎</button>
               <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={(e) => setFile(e.target.files[0])} />
               <div className="input-wrapper" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '5px' }}>
                 {file && (
-                  <div className="file-preview" style={{ fontSize: '0.85rem', color: '#666', background: '#f0f0f0', padding: '5px 10px', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div className="file-preview" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', background: 'rgba(0,0,0,0.3)', padding: '5px 10px', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span>📄 {file.name}</span>
                     <button type="button" onClick={() => { setFile(null); fileInputRef.current.value = ''; }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold', color: '#ff4d4f' }}>×</button>
                   </div>
@@ -269,14 +281,14 @@ function Chats({ initialChatId }) {
                     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
                   }}
                   onInput={() => { if (activeChat) socket.emit('typing', { chatId: activeChat._id, username }); }}
-                  style={{ width: '100%', padding: '12px', border: '1px solid #ccc', borderRadius: '20px', resize: 'none', height: '45px', minHeight: '45px', maxHeight: '120px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}
+                  className="textarea" style={{ borderRadius: 'var(--radius-xl)', background: 'rgba(0,0,0,0.2)', height: '45px', minHeight: '45px', maxHeight: '120px' }}
                 />
               </div>
-              <button className="send-btn" onClick={sendMessage} style={{ padding: '0 20px', height: '40px', border: 'none', borderRadius: '20px', cursor: 'pointer', backgroundColor: '#007bff', color: 'white', fontWeight: 'bold' }}>{t('send')}</button>
+              <button className="send-btn btn-primary" onClick={sendMessage} style={{ padding: '0 20px', height: '40px', borderRadius: 'var(--radius-full)' }}>{t('send')}</button>
             </div>
           </>
         ) : (
-          <div className="chat-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, color: '#6b7280', fontSize: '1.2rem' }}>{t('select_chat_to_start')}</div>
+          <div className="chat-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, color: 'var(--text-muted)', fontSize: '1.2rem' }}>{t('select_chat_to_start')}</div>
         )}
       </div>
       )}

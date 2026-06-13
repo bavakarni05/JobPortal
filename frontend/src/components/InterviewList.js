@@ -28,16 +28,16 @@ function InterviewList() {
   if (loading) return <div className="loading">{t('loading') || 'Loading...'}</div>;
 
   return (
-    <div className="interview-list-container" style={{ padding: 20 }}>
-      <h3>{t('scheduled_interviews') || 'Scheduled Interviews'}</h3>
+    <div className="content-section" style={{ maxWidth: 900, margin: '40px auto' }}>
+      <h3>{t('scheduled_interviews') || 'Scheduled Interviews'}</h3> {/* Replaced inline style with class */}
       {interviews.length === 0 ? (
-        <p>{t('no_interviews') || 'No interviews scheduled.'}</p>
+        <p className="loading">{t('no_interviews') || 'No interviews scheduled.'}</p>
       ) : (
         <div className="interview-cards" style={{ display: 'grid', gap: 16 }}>
           {interviews.map(int => (
-            <div key={int._id} className="job-card" style={{ background: 'white', padding: 16, borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <div key={int._id} className="feature-card" style={{ textAlign: 'left' }}>
               <div className="job-title" style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 8 }}>{int.jobTitle}</div>
-              <div className="job-meta" style={{ color: '#666', marginBottom: 8 }}>
+              <div className="job-meta" style={{ color: 'var(--text-secondary)', marginBottom: 8 }}>
                 {t('with') || 'With'}: {int.interviewer === username ? int.applicant : int.interviewer}
               </div>
               <div style={{ marginTop: 10, lineHeight: 1.6 }}>

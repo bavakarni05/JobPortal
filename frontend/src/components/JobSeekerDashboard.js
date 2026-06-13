@@ -32,11 +32,17 @@ function JobSeekerDashboard({ onLogout }) {
   const [profileForm, setProfileForm] = useState({ name: '', email: '', phone: '', preferredCategories: [] });
   const [profileLoading, setProfileLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, []);
 
   const username = localStorage.getItem('username') || 'JobSeeker';
@@ -313,18 +319,22 @@ function JobSeekerDashboard({ onLogout }) {
   };
 
   return (
-    <div className="dashboard-container">
-      <div className="header-bar">
-        <div className="header-title">{t('app_title')}</div>
-        <div className="header-nav" style={{ overflowX: 'auto', whiteSpace: 'nowrap', display: 'flex', justifyContent: isMobile ? 'flex-start' : 'center', flex: 1 }}>
+    <div className="dashboard-container landing">
+      <div className={`landing-nav ${scrolled ? 'landing-nav--scrolled' : ''}`}>
+        <div className="landing-nav__inner">
+          <div className="landing-nav__logo" style={{ cursor: 'pointer' }} onClick={() => setSection('home')}>
+            <div className="landing-nav__logo-icon">JS</div>
+            {t('app_title')}
+          </div>
+          <div className="landing-nav__links" style={{ overflowX: 'auto', whiteSpace: 'nowrap', display: 'flex', justifyContent: isMobile ? 'flex-start' : 'center', flex: 1 }}>
           <button className={section === 'home' ? 'active' : ''} onClick={() => setSection('home')}>{t('home')}</button>
           <button className={section === 'view' ? 'active' : ''} onClick={() => setSection('view')}>{t('view_jobs')}</button>
           <button className={section === 'applications' ? 'active' : ''} onClick={() => setSection('applications')}>{t('my_applications')}</button>
           <button className={section === 'recommendations' ? 'active' : ''} onClick={() => setSection('recommendations')}>{t('recommendations') || 'Recommendations'}</button>
           <button className={section === 'chats' ? 'active' : ''} onClick={() => setSection('chats')}>{t('chats')}</button>
           <button className={section === 'interviews' ? 'active' : ''} onClick={() => setSection('interviews')}>{t('interviews') || 'Interviews'}</button>
-        </div>
-        <div className="header-right">
+          </div>
+          <div className="header-right">
           <div
             className="notification-bell"
             onClick={async () => {
@@ -365,13 +375,13 @@ function JobSeekerDashboard({ onLogout }) {
             )}
           </div>
           <div className="header-profile" onClick={() => setShowProfileMenu(v => !v)}>
-            <div className="profile-icon">{username[0]?.toUpperCase() || 'S'}</div>
+            <div className="profile-icon">{username[0]?.toUpperCase() || 'JS'}</div>
             <span className="profile-name">{username}</span>
             {showProfileMenu && (
               <div className="profile-menu">
                 <div className="profile-menu-header">{username}</div>
                 <button onClick={() => { setSection('profile'); setShowProfileMenu(false); }}>{t('profile') || 'Profile'}</button>
-                <button onClick={onLogout}>{t('logout')}</button>
+                <button onClick={onLogout} style={{ color: '#ef4444' }}>{t('logout')}</button>
               </div>
             )}
           </div>
@@ -379,7 +389,7 @@ function JobSeekerDashboard({ onLogout }) {
       </div>
 
       {section === 'profile' && (
-        <div className="content-section">
+        <div className="content-section feature-card" style={{ maxWidth: 800, margin: '40px auto' }}>
           <h3>{t('edit_profile') || 'Edit Profile'}</h3>
           {profileLoading ? <div className="loading">{t('loading')}</div> : (
             <form onSubmit={handleProfileUpdate} style={{ maxWidth: 600, margin: '0 auto' }}>
@@ -415,7 +425,7 @@ function JobSeekerDashboard({ onLogout }) {
                   <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>{t('hold_ctrl_to_select_multiple') || 'Hold Ctrl/Cmd to select multiple'}</div>
                 </div>
               </div>
-              <div style={{ marginTop: 20, textAlign: 'right' }}>
+              <div className="modal-actions">
                 <button type="submit" className="btn-primary">{t('save_changes') || 'Save Changes'}</button>
               </div>
             </form>
@@ -449,47 +459,49 @@ function JobSeekerDashboard({ onLogout }) {
                     </div>
                   ))}
                 </div>
-              </div>
             )}
           </div>
         </div>
       )}
 
       {section === 'home' && (
-        <div style={{ width: '100%', margin: 0 }}>
-          <div className="hero-section">
-            <div className="hero-content">
-              <div className="hero-text-section">
-                <h1 className="hero-title">{t('discover')}</h1>
-                <p className="hero-subtitle">{t('empower_women')}</p>
-                <div className="hero-actions">
-                  <button className="btn-primary hero-btn" onClick={() => setSection('view')}>
-                    {t('view_jobs')}
-                  </button>
-                  <button className="btn-secondary hero-btn" onClick={() => setSection('applications')}>
-                    {t('my_applications')}
-                  </button>
-                </div>
-              </div>
-              <div className="hero-image-section">
-                <img src={womenImage} alt="Women empowerment" className="hero-image" />
+        <section className="hero">
+          <div className="hero__bg">
+            <div className="hero__orb hero__orb--1" />
+            <div className="hero__orb hero__orb--2" />
+            <div className="hero__orb hero__orb--3" />
+          </div>
+          <div className="hero__content">
+            <div className="hero__main">
+              <h1 className="hero__title">
+                <span>{t('discover')}</span>
+              </h1>
+              <p className="hero__subtitle">{t('empower_women')}</p>
+              <div className="hero__actions">
+                <button className="btn-primary" onClick={() => setSection('view')}>
+                  {t('view_jobs')}
+                </button>
+                <button className="btn-secondary" onClick={() => setSection('applications')}>
+                  {t('my_applications')}
+                </button>
               </div>
             </div>
+            <div className="hero__visual">
+              <img src={womenImage} alt="Women empowerment" className="hero__image-main" />
+            </div>
           </div>
-          {/* Recommendations moved to its own section */}
-        </div>
+        </section>
       )}
 
       {section === 'view' && (
         <div className="content-section">
           <h3>{t('available_jobs')}</h3>
-          {/* Recommendations moved to its own section */}
-          <div className="search-bar">
-            <input className="search-input" placeholder={t('search_jobs')} value={query} onChange={(e) => handleSearch(e.target.value)} />
-            <button className="search-button" onClick={() => handleSearch('')}>{t('reset')}</button>
+          <div className="search-bar" style={{ maxWidth: 600, margin: '0 auto 32px' }}>
+            <input className="input search-input" placeholder={t('search_jobs')} value={query} onChange={(e) => handleSearch(e.target.value)} />
+            <button className="btn-secondary search-button" onClick={() => handleSearch('')}>{t('reset')}</button>
           </div>
           {loading ? <div className="loading">{t('loading_jobs')}</div> : jobs.length === 0 ? <div className="loading">{t('no_jobs_available')}</div> : (
-            <ul className="title-list">
+            <ul className="title-list" style={{ maxWidth: 900, margin: '0 auto' }}>
               {jobs.map(job => (
                 <li key={job._id} className="title-item" onClick={() => setExpandedJob(expandedJob === job._id ? null : job._id)}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -499,7 +511,7 @@ function JobSeekerDashboard({ onLogout }) {
                     {job.requireResume ? <span className="badge">{t('resume_required')}</span> : <span className="badge success">{t('resume_optional')}</span>}
                   </div>
                   {expandedJob === job._id && (
-                    <div style={{ marginTop: 16, fontWeight: 400 }}>
+                    <div style={{ marginTop: 16, fontWeight: 400, color: 'var(--text-secondary)' }}>
                       <div className="job-meta">{job.company} • {job.location}</div>
                       <div style={{ marginBottom: 16, color: 'var(--text-primary)', lineHeight: 1.6 }}>{job.description}</div>
                       <div style={{ display: 'flex', gap: 12 }}>
@@ -524,7 +536,7 @@ function JobSeekerDashboard({ onLogout }) {
         <div className="content-section">
           <h3>{t('my_applications')}</h3>
           {loading ? <div className="loading">{t('loading_applications')}</div> : applications.length === 0 ? <div className="loading">{t('no_applications_yet')}</div> : (
-            <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+            <div style={{ maxWidth: 900, margin: '0 auto', display: 'grid', gap: 20 }}>
               {applications.map(app => (
                 <div key={app._id} className="job-card" onClick={() => handleApplicationClick(app)} style={{ cursor: 'pointer' }}>
                   <div className="job-title">
@@ -556,11 +568,11 @@ function JobSeekerDashboard({ onLogout }) {
       )}
 
       {showApply && (
-        <div className="modal-overlay" onClick={() => setShowApply(false)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay" onClick={() => setShowApply(false)} style={{ zIndex: 1000 }}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 700 }}>
             <h3>{t('apply_for')} {applyForJob?.title}</h3>
             {applyForJob?.requireResume ? (
-              <div style={{ marginBottom: 10 }} className="badge">{t('resume_required')}</div>
+              <div style={{ marginBottom: 24 }} className="badge info">{t('resume_required')}</div>
             ) : (
               <div className="badge success" style={{ marginBottom: 10 }}>{t('resume_optional')}</div>
             )}
@@ -591,7 +603,7 @@ function JobSeekerDashboard({ onLogout }) {
                   <input className="input" type="file" accept=".pdf,.doc,.docx" onChange={e => setResume(e.target.files[0])} />
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
+              <div className="modal-actions">
                 <button type="button" className="btn-secondary" onClick={() => setShowApply(false)}>{t('cancel')}</button>
                 <button type="submit" className="btn-primary">{t('submit_application')}</button>
               </div>
@@ -602,55 +614,55 @@ function JobSeekerDashboard({ onLogout }) {
       )}
 
       {showAppDetailsModal && selectedApplication && (
-        <div className="modal-overlay" onClick={() => setShowAppDetailsModal(false)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay" onClick={() => setShowAppDetailsModal(false)} style={{ zIndex: 1000 }}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 700 }}>
             <h3>{t('my_application_details')}</h3>
             <div className="form-grid">
               <div className="full">
                 <label className="label">{t('applied_for')}</label>
-                <div className="input" style={{ background: '#f8f9fa', border: 'none' }}>
+                <div className="input" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)' }}>
                   {language === 'en' ? selectedApplication.job?.title : (translatedTitles[selectedApplication.job?.title] || selectedApplication.job?.title)}
                 </div>
               </div>
               <div>
                 <label className="label">{t('company')}</label>
-                <div className="input" style={{ background: '#f8f9fa', border: 'none' }}>
+                <div className="input" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)' }}>
                   {selectedApplication.job?.company}
                 </div>
               </div>
               <div>
                 <label className="label">{t('location')}</label>
-                <div className="input" style={{ background: '#f8f9fa', border: 'none' }}>
+                <div className="input" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)' }}>
                   {selectedApplication.job?.location}
                 </div>
               </div>
               <div>
                 <label className="label">{t('full_name')}</label>
-                <div className="input" style={{ background: '#f8f9fa', border: 'none' }}>
+                <div className="input" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)' }}>
                   {selectedApplication.applicantName}
                 </div>
               </div>
               <div>
                 <label className="label">{t('age')}</label>
-                <div className="input" style={{ background: '#f8f9fa', border: 'none' }}>
+                <div className="input" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)' }}>
                   {selectedApplication.age}
                 </div>
               </div>
               <div className="full">
                 <label className="label">{t('address')}</label>
-                <div className="input" style={{ background: '#f8f9fa', border: 'none' }}>
+                <div className="input" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)' }}>
                   {selectedApplication.address}
                 </div>
               </div>
               <div>
                 <label className="label">{t('email_optional')}</label>
-                <div className="input" style={{ background: '#f8f9fa', border: 'none' }}>
+                <div className="input" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)' }}>
                   {selectedApplication.email || '-'}
                 </div>
               </div>
               <div>
                 <label className="label">{t('status')}</label>
-                <div className="input" style={{ background: '#f8f9fa', border: 'none' }}>
+                <div className="input" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)' }}>
                   <span className={`badge ${selectedApplication.status === 'accepted' ? 'success' : ''}`}>
                     {t(selectedApplication.status)}
                   </span>
@@ -658,7 +670,7 @@ function JobSeekerDashboard({ onLogout }) {
               </div>
               <div>
                 <label className="label">{t('application_date')}</label>
-                <div className="input" style={{ background: '#f8f9fa', border: 'none' }}>
+                <div className="input" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)' }}>
                   {selectedApplication.createdAt ? new Date(selectedApplication.createdAt).toLocaleDateString() : '-'}
                 </div>
               </div>

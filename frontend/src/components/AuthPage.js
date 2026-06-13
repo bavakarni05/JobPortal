@@ -57,16 +57,23 @@ function AuthPage({ onLogin }) {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <h2>{isSignup ? t('sign_up') : t('login')}</h2>
+    <div className="auth-container landing">
+      <div className="hero__bg">
+        <div className="hero__orb hero__orb--1" />
+        <div className="hero__orb hero__orb--2" />
+        <div className="hero__orb hero__orb--3" />
+      </div>
+      <div className="auth-card feature-card" style={{ maxWidth: 450, margin: '80px auto', position: 'relative', zIndex: 1 }}>
+        <h2 style={{ textAlign: 'center', marginBottom: 24, fontFamily: 'var(--font-display)', fontWeight: 800 }}>
+          {isSignup ? t('sign_up') : t('login')}
+        </h2>
         <form onSubmit={handleSubmit} className="auth-form">
           <div>
-            <label className="label">{t('username')}</label>
+            <label className="label" style={{ color: 'var(--text-secondary)' }}>{t('username')}</label>
             <input className="input" type="text" value={username} onChange={e => setUsername(e.target.value)} required />
           </div>
           <div>
-            <label className="label">{t('password')}</label>
+            <label className="label" style={{ color: 'var(--text-secondary)' }}>{t('password')}</label>
             <input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
           </div>
           {isSignup && (

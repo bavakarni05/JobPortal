@@ -118,16 +118,29 @@ function JobDetails() {
   if (error) return <div className="dashboard-container" style={{ color: 'red' }}>{error}</div>;
   if (!job) return <div className="dashboard-container">{t('job_not_found')}</div>;
 
-  return (
-    <div className="dashboard-container" style={{ paddingTop: 64 }}>
-      <div className="header-bar">
-        <div className="header-title" style={{ cursor: 'pointer' }} onClick={() => navigate(-1)}>{t('app_title')}</div>
+  return ( /* The main container now uses the landing class for background and orbs */
+    <div className="dashboard-container landing">
+      <div className="hero__bg">
+        <div className="hero__orb hero__orb--1" />
+        <div className="hero__orb hero__orb--2" />
+        <div className="hero__orb hero__orb--3" />
       </div>
-      <div className="job-details">
-        <h2 className="job-title-lg">{translated?.title || job.title}</h2>
-        <div className="meta-item"><span className="meta-label">{t('company')}:</span><span className="meta-value">{translated?.company || job.company}</span></div>
-        <div className="meta-item"><span className="meta-label">{t('location')}:</span><span className="meta-value">{translated?.location || job.location}</span></div>
-        <div className="description"><span className="meta-label">{t('description')}:</span> <span className="meta-value">{translated?.description || job.description}</span></div>
+      
+      <div className="landing-nav landing-nav--scrolled">
+        <div className="landing-nav__inner">
+          <div className="landing-nav__logo" style={{ cursor: 'pointer' }} onClick={() => navigate(-1)}>
+            <div className="landing-nav__logo-icon">JD</div> {/* Job Details logo icon */}
+            {t('app_title')}
+          </div>
+          <button className="btn-secondary" onClick={() => navigate(-1)}>{t('back')}</button>
+        </div>
+      </div>
+
+      <div className="job-details feature-card" style={{ maxWidth: 800, margin: '0 auto', textAlign: 'left' }}>
+        <h2 className="job-title">{translated?.title || job.title}</h2>
+        <div className="job-meta">{translated?.company || job.company} • {translated?.location || job.location}</div>
+        <div className="description" style={{ marginBottom: 16, color: 'var(--text-primary)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{translated?.description || job.description}</div>
+        
         <div className="badge-group">
           {job.jobType && <span className="badge">{t('job_type')}: {job.jobType}</span>}
           {job.workMode && <span className="badge">{t('work_mode')}: {job.workMode}</span>}
@@ -137,37 +150,34 @@ function JobDetails() {
           {job.startDate && <span className="badge">{t('start_date')}: {new Date(job.startDate).toLocaleDateString()}</span>}
           {job.applyBy && <span className="badge">{t('apply_by')}: {new Date(job.applyBy).toLocaleDateString()}</span>}
         </div>
-        {(Array.isArray(job.skills) && job.skills.length > 0) && (
-          <div className="meta-item" style={{ marginBottom: 8 }}>
-            <span className="meta-label">{t('skills')}:</span><span className="meta-value">{job.skills.join(', ')}</span>
+        {job.skills && job.skills.length > 0 && (
+          <div className="job-meta" style={{ marginTop: 16 }}>
+            <span style={{ fontWeight: 600 }}>{t('skills')}:</span> {job.skills.join(', ')}
           </div>
         )}
-        {(Array.isArray(job.perks) && job.perks.length > 0) && (
-          <div className="meta-item" style={{ marginBottom: 8 }}>
-            <span className="meta-label">{t('perks')}:</span><span className="meta-value">{job.perks.join(', ')}</span>
+        {job.perks && job.perks.length > 0 && (
+          <div className="job-meta">
+            <span style={{ fontWeight: 600 }}>{t('perks')}:</span> {job.perks.join(', ')}
           </div>
         )}
-        <div className="muted">{t('posted_by')} {job.postedBy?.username || 'Unknown'}</div>
+        <div className="job-meta" style={{ marginTop: 16 }}>{t('posted_by')} {job.postedBy?.username || 'Unknown'}</div>
         {!applied && username && (
-          <button onClick={openApply} className="btn-primary" style={{ marginTop: 12 }}>{t('apply')}</button>
+          <button onClick={openApply} className="btn-primary" style={{ marginTop: 24 }}>{t('apply')}</button>
         )}
         {applied && <div className="success" style={{ marginTop: 12 }}>{t('applied')}</div>}
         {error && <div className="error" style={{ marginTop: 10 }}>{error}</div>}
         {success && <div className="success" style={{ marginTop: 10 }}>{success}</div>}
         <CompanyReview companyName={job.company} />
-        <div className="action-row" style={{ marginTop: 16 }}>
-          <button onClick={() => navigate(-1)} className="btn-secondary">{t('back')}</button>
-        </div>
       </div>
 
       {showApply && (
-        <div className="modal-overlay" onClick={() => setShowApply(false)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay" onClick={() => setShowApply(false)} style={{ zIndex: 1000 }}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 700 }}>
             <h3>{t('apply_for')} {job.title}</h3>
             <form onSubmit={submitApplication}>
               <div className="form-grid">
                 <div className="full">
-                  <label className="label">{t('full_name')}</label>
+                  <label className="label">{t('full_name')}</label> {/* Added label class */}
                   <input className="input" value={applyForm.applicantName} onChange={e => setApplyForm({ ...applyForm, applicantName: e.target.value })} required />
                 </div>
                 <div>
@@ -186,8 +196,8 @@ function JobDetails() {
                   <label className="label">{t('resume_upload')}</label>
                   <input className="input" type="file" accept=".pdf,.doc,.docx" onChange={e => setResume(e.target.files[0])} />
                 </div>
-              </div>
-              <div className="modal-actions">
+              </div> {/* Moved modal-actions to use the new class */}
+              <div className="modal-actions" style={{ marginTop: 32 }}>
                 <button type="button" className="btn-secondary" onClick={() => setShowApply(false)}>{t('cancel')}</button>
                 <button type="submit" className="btn-primary">{t('submit_application')}</button>
               </div>

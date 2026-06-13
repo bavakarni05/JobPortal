@@ -46,15 +46,15 @@ function CompanyReview({ companyName }) {
   const averageRating = reviews.length > 0 ? Math.round(reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length) : 0;
 
   return (
-    <div className="review-section" style={{ marginTop: 24, padding: 16, background: '#fff', borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', textAlign: 'left' }}>
+    <div className="review-section" style={{ marginTop: 40, borderTop: '1px solid var(--border)', paddingTop: 24, textAlign: 'left', color: 'var(--text-secondary)' }}>
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
-        <h3 style={{ margin: 0, marginRight: 12 }}>{t('reviews') || 'Reviews'}</h3>
+        <h3 style={{ margin: 0, marginRight: 12, color: 'var(--text-primary)' }}>{t('reviews') || 'Reviews'}</h3>
         <span style={{ color: '#f39c12', fontSize: '1.2rem' }}>{'★'.repeat(averageRating)}</span>
-        <span style={{ color: '#ddd', fontSize: '1.2rem' }}>{'★'.repeat(5 - averageRating)}</span>
+        <span style={{ color: 'var(--border)', fontSize: '1.2rem' }}>{'★'.repeat(5 - averageRating)}</span>
       </div>
       <div className="reviews-list" style={{ marginBottom: 20 }}>
-        {reviews.length === 0 ? <p style={{ color: '#666' }}>{t('no_reviews_yet') || 'No reviews yet. Be the first!'}</p> : reviews.map((r, i) => (
-          <div key={i} className="review-card" style={{ borderBottom: '1px solid #eee', padding: '12px 0' }}>
+        {reviews.length === 0 ? <p style={{ color: 'var(--text-muted)' }}>{t('no_reviews_yet') || 'No reviews yet. Be the first!'}</p> : reviews.map((r, i) => (
+          <div key={i} className="review-card" style={{ borderBottom: '1px solid var(--border)', padding: '12px 0' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
               <span style={{ fontWeight: 600 }}>{r.username}</span>
               <span style={{ color: '#f39c12' }}>{'★'.repeat(r.rating)}</span>
@@ -65,16 +65,16 @@ function CompanyReview({ companyName }) {
         ))}
       </div>
       {username && (
-        <form onSubmit={handleSubmit} style={{ background: '#f8f9fa', padding: 16, borderRadius: 8 }}>
-          <h4 style={{ marginTop: 0, marginBottom: 12 }}>{t('write_review') || 'Write a Review'}</h4>
+        <form onSubmit={handleSubmit} className="feature-card" style={{ padding: 24, background: 'var(--bg-card)' }}>
+          <h4 style={{ marginTop: 0, marginBottom: 16, color: 'var(--text-primary)' }}>{t('write_review') || 'Write a Review'}</h4>
           <div style={{ marginBottom: 12 }}>
-            <label style={{ display: 'block', marginBottom: 4, fontSize: 14, fontWeight: 500 }}>{t('rating') || 'Rating'}</label>
-            <select value={rating} onChange={e => setRating(Number(e.target.value))} style={{ padding: '8px', borderRadius: 4, border: '1px solid #ddd', width: '100px' }}>
+            <label className="label">{t('rating') || 'Rating'}</label>
+            <select className="select" value={rating} onChange={e => setRating(Number(e.target.value))} style={{ width: '100px' }}>
               {[5,4,3,2,1].map(r => <option key={r} value={r}>{r} Stars</option>)}
             </select>
           </div>
           <div style={{ marginBottom: 12 }}>
-            <textarea 
+            <textarea className="textarea" rows="4"
               value={comment} 
               onChange={e => setComment(e.target.value)} 
               placeholder={t('share_experience') || 'Share your experience...'}

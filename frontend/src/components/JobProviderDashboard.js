@@ -30,11 +30,17 @@ function JobProviderDashboard({ onLogout }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, []);
 
   useEffect(() => {
@@ -261,17 +267,21 @@ function JobProviderDashboard({ onLogout }) {
   };
 
   return (
-    <div className="dashboard-container">
-      <div className="header-bar">
-        <div className="header-title">{t('app_title')}</div>
-        <div className="header-nav" style={{ overflowX: 'auto', whiteSpace: 'nowrap', display: 'flex', justifyContent: isMobile ? 'flex-start' : 'center', flex: 1 }}>
+    <div className="dashboard-container landing">
+      <div className={`landing-nav ${scrolled ? 'landing-nav--scrolled' : ''}`}>
+        <div className="landing-nav__inner">
+          <div className="landing-nav__logo" style={{ cursor: 'pointer' }} onClick={() => setSection('home')}>
+            <div className="landing-nav__logo-icon">JP</div>
+            {t('app_title')}
+          </div>
+          <div className="landing-nav__links" style={{ overflowX: 'auto', whiteSpace: 'nowrap', display: 'flex', justifyContent: isMobile ? 'flex-start' : 'center', flex: 1 }}>
           <button className={section === 'home' ? 'active' : ''} onClick={() => setSection('home')}>{t('home')}</button>
           <button className={section === 'add' ? 'active' : ''} onClick={() => setSection('add')}>{t('add_job')}</button>
           <button className={section === 'view' ? 'active' : ''} onClick={() => setSection('view')}>{t('my_jobs')}</button>
           <button className={section === 'chats' ? 'active' : ''} onClick={() => setSection('chats')}>{t('chats')}</button>
           <button className={section === 'interviews' ? 'active' : ''} onClick={() => setSection('interviews')}>{t('interviews') || 'Interviews'}</button>
-        </div>
-        <div className="header-right">
+          </div>
+          <div className="header-right">
           <div
             className="notification-bell"
             onClick={() => {
@@ -310,7 +320,7 @@ function JobProviderDashboard({ onLogout }) {
             )}
           </div>
           <div className="header-profile" onClick={() => setShowProfileMenu(v => !v)}>
-            <div className="profile-icon">{username[0]?.toUpperCase() || 'P'}</div>
+            <div className="profile-icon">{username[0]?.toUpperCase() || 'JP'}</div>
             <span className="profile-name">{username}</span>
             {showProfileMenu && (
               <div className="profile-menu">
@@ -323,31 +333,36 @@ function JobProviderDashboard({ onLogout }) {
       </div>
 
       {section === 'home' && (
-        <div style={{ width: '100%', margin: 0 }}>
-          <div className="hero-section">
-            <div className="hero-content">
-              <div className="hero-text-section">
-                <h1 className="hero-title">{t('empower_women')}</h1>
-                <p className="hero-subtitle">{t('discover')}</p>
-                <div className="hero-actions">
-                  <button className="btn-primary hero-btn" onClick={() => setSection('add')}>
-                    {t('add_job')}
-                  </button>
-                  <button className="btn-secondary hero-btn" onClick={() => setSection('view')}>
-                    {t('my_jobs')}
-                  </button>
-                </div>
-              </div>
-              <div className="hero-image-section">
-                <img src={womenImage} alt="Women empowerment" className="hero-image" />
+        <section className="hero">
+          <div className="hero__bg">
+            <div className="hero__orb hero__orb--1" />
+            <div className="hero__orb hero__orb--2" />
+            <div className="hero__orb hero__orb--3" />
+          </div>
+          <div className="hero__content">
+            <div className="hero__main">
+              <h1 className="hero__title">
+                <span>{t('empower_women')}</span>
+              </h1>
+              <p className="hero__subtitle">{t('discover')}</p>
+              <div className="hero__actions">
+                <button className="btn-primary" onClick={() => setSection('add')}>
+                  {t('add_job')}
+                </button>
+                <button className="btn-secondary" onClick={() => setSection('view')}>
+                  {t('my_jobs')}
+                </button>
               </div>
             </div>
+            <div className="hero__visual">
+              <img src={womenImage} alt="Hero" className="hero__image-main" />
+            </div>
           </div>
-        </div>
+        </section>
       )}
 
       {section === 'add' && (
-        <div className="form-card">
+        <div className="content-section feature-card" style={{ maxWidth: 800, margin: '40px auto' }}>
           <h3>{t('post_new_job')}</h3>
           <form onSubmit={handleAddJob}>
             <div className="form-grid">
@@ -444,12 +459,12 @@ function JobProviderDashboard({ onLogout }) {
       {section === 'view' && (
         <div className="content-section">
           <h3>{t('my_jobs')}</h3>
-          <div className="search-bar">
-            <input className="search-input" placeholder={t('search_placeholder')} value={query} onChange={(e) => handleSearch(e.target.value)} />
-            <button className="search-button" onClick={() => handleSearch('')}>{t('reset')}</button>
+          <div className="search-bar" style={{ maxWidth: 600, margin: '0 auto 32px' }}>
+            <input className="input search-input" placeholder={t('search_placeholder')} value={query} onChange={(e) => handleSearch(e.target.value)} />
+            <button className="btn-secondary search-button" onClick={() => handleSearch('')}>{t('reset')}</button>
           </div>
           {loading ? <div className="loading">{t('loading')}</div> : jobs.length === 0 ? <div className="loading">{t('no_jobs_posted')}</div> : (
-            <ul className="title-list">
+            <ul className="title-list" style={{ maxWidth: 900, margin: '0 auto' }}>
               {jobs.map(job => (
                 <li key={job._id} className="title-item" onClick={() => handleToggleDetails(job._id)}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -457,12 +472,12 @@ function JobProviderDashboard({ onLogout }) {
                     <button className="btn-secondary" onClick={(e) => { e.stopPropagation(); handleDeleteJob(job._id); }}>{t('delete')}</button>
                   </div>
                   {expandedJob === job._id && (
-                    <div style={{ marginTop: 16, fontWeight: 400 }}>
+                    <div style={{ marginTop: 16, fontWeight: 400, color: 'var(--text-secondary)' }}>
                       <div className="job-meta">{language === 'en' ? job.company : (translated[job._id]?.company || job.company)} • {language === 'en' ? job.location : (translated[job._id]?.location || job.location)}</div>
-                      <div style={{ marginBottom: 16, color: 'var(--text-primary)', lineHeight: 1.6 }}>
+                      <div style={{ marginBottom: 16, color: 'var(--text-primary)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
                         {language === 'en' ? job.description : (translated[job._id]?.description || job.description)}
                       </div>
-                      <div style={{ fontWeight: 600, marginBottom: 12, color: 'var(--primary-blue)' }}>{t('applications')}:</div>
+                      <div style={{ fontWeight: 600, marginBottom: 12, color: 'var(--primary)' }}>{t('applications')}:</div>
                       {applications[job._id]?.length === 0 ? <div className="loading">{t('no_applications_yet')}</div> : (
                         <div style={{ display: 'grid', gap: 12 }}>
                           {applications[job._id]?.map(app => (
@@ -505,19 +520,19 @@ function JobProviderDashboard({ onLogout }) {
       )}
 
       {showAppModal && activeApp && (
-        <div className="modal-overlay" onClick={() => setShowAppModal(false)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay" onClick={() => setShowAppModal(false)} style={{ zIndex: 1000 }}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 700 }}>
             <h3>{t('application_details')}</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div><b>{t('name')}:</b> {activeApp.applicantName || activeApp.applicant?.profile?.name || activeApp.applicant?.username}</div>
-              <div><b>{t('age')}:</b> {activeApp.age || '-'}</div>
-              <div className="full"><b>{t('address')}:</b> {activeApp.address || '-'}</div>
-              <div><b>{t('contact')}:</b> {activeApp.contactNo || activeApp.applicant?.profile?.phone || '-'}</div>
-              <div><b>{t('status')}:</b> {t(activeApp.status)}</div>
-              <div><b>{t('job')}:</b> {activeApp.job?.title}</div>
+              <div className="label"><b>{t('name')}:</b> {activeApp.applicantName || activeApp.applicant?.profile?.name || activeApp.applicant?.username}</div>
+              <div className="label"><b>{t('age')}:</b> {activeApp.age || '-'}</div>
+              <div className="full label"><b>{t('address')}:</b> {activeApp.address || '-'}</div>
+              <div className="label"><b>{t('contact')}:</b> {activeApp.contactNo || activeApp.applicant?.profile?.phone || '-'}</div>
+              <div className="label"><b>{t('status')}:</b> <span className={`badge ${activeApp.status === 'accepted' ? 'success' : ''}`}>{t(activeApp.status)}</span></div>
+              <div className="label"><b>{t('job')}:</b> {activeApp.job?.title}</div>
             </div>
             {activeApp.resumePath && (
-              <div style={{ marginTop: 12 }}>
+              <div style={{ marginTop: 24 }}>
                 <a href={activeApp.resumePath} target="_blank" rel="noreferrer" className="btn-secondary">{t('view_resume')}</a>
               </div>
             )}

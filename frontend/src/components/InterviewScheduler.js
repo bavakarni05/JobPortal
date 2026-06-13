@@ -42,8 +42,8 @@ function InterviewScheduler({ applicationId, jobId, applicantUsername, interview
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1000 }}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 600 }}>
         <h3>{t('schedule_interview') || 'Schedule Interview'}</h3>
         <form onSubmit={handleSubmit}>
           <div className="form-grid">
