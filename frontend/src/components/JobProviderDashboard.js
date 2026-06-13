@@ -31,7 +31,7 @@ function JobProviderDashboard({ onLogout }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-  co onst [scrolled, setScrolled] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const [visible, setVisible] = useState(true);
   const [prevScrollPos, setPrevScrollPos] = useState(window.pageYOffset);
 
